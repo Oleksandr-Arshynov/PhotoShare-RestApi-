@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "photoshare-restapi-"
+version = "0.1.0"
+description = ""
+authors = ["Oleksandr Arshynov <oleksandrarshynov@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.2"
+sqlalchemy = "^2.0.29"
+uvicorn = "^0.29.0"
+alembic = "^1.13.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
