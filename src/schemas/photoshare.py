@@ -42,22 +42,22 @@ class User(UserBase):
         orm_mode = True
 
 
-class BanBase(BaseModel):
-    user_id: int
+# class BanBase(BaseModel):
+#     user_id: int
 
 
-class BanCreate(BanBase):
-    pass
+# class BanCreate(BanBase):
+#     pass
 
 
-class Ban(BanBase):
-    id: int
-    created_ban: Optional[str] = None
-    end_of_the_ban: Optional[str] = None
-    user: User
+# class Ban(BanBase):
+#     id: int
+#     created_ban: Optional[str] = None
+#     end_of_the_ban: Optional[str] = None
+#     user: User
 
-    class Config:
-        orm_mode = True
+#     class Config:
+#         orm_mode = True
 
 
 class TagBase(BaseModel):
@@ -76,76 +76,74 @@ class Tag(TagBase):
 
 
 class PhotoBase(BaseModel):
-    user_id: int
     photo: str
     description: Optional[str] = None
+    tags:  Optional[List[TagCreate]] = None
 
 
 class PhotoCreate(PhotoBase):
-    tags: Optional[List[TagBase]] = []
+    pass
 
 
 class Photo(PhotoBase):
     id: int
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
     user: User
-    tags: List[Tag]
-
+    
     class Config:
         orm_mode = True
 
 
-class CommentBase(BaseModel):
-    photo_id: int
-    user_id: int
-    comment: str
+
+# class CommentBase(BaseModel):
+#     photo_id: int
+#     user_id: int
+#     comment: str
 
 
-class CommentCreate(CommentBase):
-    pass
+# class CommentCreate(CommentBase):
+#     pass
 
 
-class Comment(CommentBase):
-    id: int
-    photo: Photo
-    user: User
+# class Comment(CommentBase):
+#     id: int
+#     photo: Photo
+#     user: User
 
-    class Config:
-        orm_mode = True
-
-
-class LogoutUserBase(BaseModel):
-    user_id: int
-    access_token: str
+#     class Config:
+#         orm_mode = True
 
 
-class LogoutUserCreate(LogoutUserBase):
-    pass
+# class LogoutUserBase(BaseModel):
+#     user_id: int
+#     access_token: str
 
 
-class LogoutUser(LogoutUserBase):
-    id: int
-    user: User
-
-    class Config:
-        orm_mode = True
+# class LogoutUserCreate(LogoutUserBase):
+#     pass
 
 
-class RatingBase(BaseModel):
-    photo_id: int
-    user_id: int
-    rating: int
+# class LogoutUser(LogoutUserBase):
+#     id: int
+#     user: User
+
+#     class Config:
+#         orm_mode = True
 
 
-class RatingCreate(RatingBase):
-    pass
+# class RatingBase(BaseModel):
+#     photo_id: int
+#     user_id: int
+#     rating: int
 
 
-class Rating(RatingBase):
-    id: int
-    user: User
-    photo: Photo
+# class RatingCreate(RatingBase):
+#     pass
 
-    class Config:
-        orm_mode = True
+
+# class Rating(RatingBase):
+#     id: int
+#     user: User
+#     photo: Photo
+
+#     class Config:
+#         orm_mode = True
