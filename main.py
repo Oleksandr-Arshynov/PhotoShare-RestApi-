@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 import uvicorn
 
-import routes.photoshare
+import src.routes.photoshare
 
 app = FastAPI()
 
 
-app.include_router(routes.photoshare.router)
+app.include_router(src.routes.photoshare)
 
 
 if __name__ == "__main__":
