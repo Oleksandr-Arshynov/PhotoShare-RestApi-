@@ -16,7 +16,9 @@ async def home(request: Request, db: Session = Depends(get_db)): #, current_user
     # create role
     roles = ["Admin", "Moderator", "User"]
     for role in roles:
-        db.add(Role(role=role))
+        existing_role = db.query(Role).filter(Role.role == role).first()
+        if not existing_role:
+            db.add(Role(role=role))
     db.commit()
 
     # create Admin
@@ -25,7 +27,7 @@ async def home(request: Request, db: Session = Depends(get_db)): #, current_user
                 password="qwerty",
                 avatar="avatar",
                 confirmed=True,
-                role_id=1)
+                role_id=15)
     db.add(user)
     db.commit()
 
