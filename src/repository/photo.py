@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 
-#
+
 async def create_photo(user_id: int, photo: str, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
     photo = Photo(photo=photo, description=description, user_id=user_id)
 
@@ -25,7 +25,7 @@ async def create_photo(user_id: int, photo: str, description: str, tags: list, d
     return photo 
 
 
-#
+
 async def put_photo(user_id: int, photo_id: int, photo: str, description: str, tags: list, db: Session) -> Tag:
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
@@ -53,7 +53,7 @@ async def put_photo(user_id: int, photo_id: int, photo: str, description: str, t
     return post_photo
 
 
-#
+
 async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
     photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
@@ -71,7 +71,7 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
     
 
-#
+
 async def get_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
     photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
