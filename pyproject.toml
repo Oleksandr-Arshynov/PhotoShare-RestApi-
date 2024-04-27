@@ -11,6 +11,9 @@ fastapi = "^0.110.2"
 sqlalchemy = "^2.0.29"
 uvicorn = "^0.29.0"
 alembic = "^1.13.1"
+cloudinary = "^1.40.0"
+python-dotenv = "^1.0.1"
+python-jose = "^3.3.0"
 
 
 [build-system]
