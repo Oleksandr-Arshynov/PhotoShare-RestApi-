@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, CheckConstraint
 
 try:
     from src.database.db import Base
