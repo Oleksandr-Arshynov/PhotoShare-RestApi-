@@ -1,99 +1,102 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, CheckConstraint
 
-from database.db import Base
+try:
+    from src.database.db import Base
+except:
+    from database.db import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
     id = Column(Integer, primary_key=True)
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(150), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
     avatar = Column(String, nullable=True)
     confirmed = Column(Boolean, default=False)
-    role_id = Column(Integer, ForeignKey('roles.id'), default=3)
+    role_id = Column(Integer, ForeignKey('role.id'), default=3)
     number_of_photos = Column(Integer, default=0)
     refresh_token = Column(String(255), nullable=True)
     created_at = Column('created_at', DateTime, default=func.now(), nullable=True)
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
 
-    role = relationship("Role", back_populates="users") 
-    ban = relationship("Ban", back_populates="users") 
-    photo = relationship("Photo", back_populates="users")
-    comment = relationship("Сomment", back_populates="users") 
+    role = relationship("Role", back_populates="user") 
+    # ban = relationship("Ban", back_populates="users") 
+    photo = relationship("Photo", back_populates="user")
+    # comment = relationship("Сomment", back_populates="users") 
 
 
 class Role(Base):
-    __tablename__ = "roles"
+    __tablename__ = "role"
     id = Column(Integer, primary_key=True)
     role = Column(String, nullable=False, unique=True)
 
-    users = relationship("User", back_populates="role") 
+    user = relationship("User", back_populates="role") 
 
 
-class Ban(Base):
-    __tablename__ = "bans"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    created_ban = Column('created_ban', DateTime, default=func.now(), nullable=True)
-    end_of_the_ban = Column('end_of_the_ban', DateTime, default=None, nullable=True)
+# class Ban(Base):
+#     __tablename__ = "bans"
+#     id = Column(Integer, primary_key=True)
+#     user_id = Column(Integer, ForeignKey('users.id'))
+#     created_ban = Column('created_ban', DateTime, default=func.now(), nullable=True)
+#     end_of_the_ban = Column('end_of_the_ban', DateTime, default=None, nullable=True)
 
-    user = relationship("User", back_populates="bans")
+#     user = relationship("User", back_populates="bans")
 
 
 class Tag(Base):
-    __tablename__ = "tags"
+    __tablename__ = "tag"
     id = Column(Integer, primary_key=True, unique=True)
-    name = Column(String, primary_key=True, unique=True)
+    name = Column(String, unique=True)
 
 
 class Photo(Base):
-    __tablename__ = "photos"
+    __tablename__ = "photo"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('user.id'))
     created_at = Column('created_at', DateTime, default=func.now(), nullable=True)
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
     photo = Column(String)
     description = Column(String, nullable=True)
 
-    user = relationship("User", back_populates="photos")  
-    tags = relationship("Tag", secondary="photo_tag_association", backref="photos")
+    user = relationship("User", back_populates="photo")  
+    tags = relationship("Tag", secondary="photo_tag_association", backref="photo")
 
 
 class PhotoTagAssociation(Base):
     __tablename__ = "photo_tag_association"
-    photo_id = Column(Integer, ForeignKey("photos.id"), primary_key=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
+    photo_id = Column(Integer, ForeignKey("photo.id"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tag.id"), primary_key=True)
 
 
-class Comment(Base):
-    __tablename__ = "comments"
-    id = Column(Integer, primary_key=True)
-    photo_id = Column(Integer, ForeignKey('photos.id'), nullable=False)  
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
-    comment = Column(String(255), nullable=False)
+# class Comment(Base):
+#     __tablename__ = "comments"
+#     id = Column(Integer, primary_key=True)
+#     photo_id = Column(Integer, ForeignKey('photos.id'), nullable=False)  
+#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
+#     comment = Column(String(255), nullable=False)
 
-    photo = relationship("Photo", back_populates="comments") 
-    user = relationship("User", back_populates="comments")
-
-
-class LogoutUser(Base):
-    __tablename__ = "logout_users"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
-    access_token = Column(String)
-
-    user = relationship("User", back_populates="logout_users")
+#     photo = relationship("Photo", back_populates="comments") 
+#     user = relationship("User", back_populates="comments")
 
 
-class Rating(Base):
-    __tablename__ = "ratings"
-    id = Column(Integer, primary_key=True)
-    photo_id = Column(Integer, ForeignKey('photos.id'), nullable=False)  
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
-    rating = Column(Integer)
-    __table_args__ = (CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),)
+# class LogoutUser(Base):
+#     __tablename__ = "logout_users"
+#     id = Column(Integer, primary_key=True)
+#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
+#     access_token = Column(String)
 
-    user = relationship("User", back_populates="ratings")
-    photo = relationship("Photo", back_populates="rating")
+#     user = relationship("User", back_populates="logout_users")
+
+
+# class Rating(Base):
+#     __tablename__ = "ratings"
+#     id = Column(Integer, primary_key=True)
+#     photo_id = Column(Integer, ForeignKey('photos.id'), nullable=False)  
+#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
+#     rating = Column(Integer)
+#     __table_args__ = (CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),)
+
+#     user = relationship("User", back_populates="ratings")
+#     photo = relationship("Photo", back_populates="rating")
