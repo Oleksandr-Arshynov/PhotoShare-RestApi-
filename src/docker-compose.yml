@@ -6,9 +6,9 @@ services:
   postgres:
     image: postgres:12
     environment:
-      POSTGRES_DB: ${PG_DB}
-      POSTGRES_USER: ${PG_USER}
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: photo_share_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 567234
     ports:
       - "5432:5432"
     # volumes:

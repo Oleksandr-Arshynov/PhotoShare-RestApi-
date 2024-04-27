@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-from schemas.tag_schemas import Tag, TagBase
-from schemas.user_schemas import User
+from src.schemas.tag_schemas import Tag, TagBase
+from src.schemas.user_schemas import User
 
 
 class PhotoBase(BaseModel):
