@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, status, Request, FastAPI, File, UploadFi
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
+from src.repository import tags as repository_tags
 from src.schemas.photo_schemas import PhotoCreate
+from src.schemas.tag_schemas import TagCreate
 
 from src.conf.config import settings
 import cloudinary
@@ -17,15 +19,16 @@ cloudinary.config(
     cloud_name=settings.CLD_NAME, api_key=settings.CLD_API_KEY, api_secret=settings.CLD_API_SECRET
 )
 
-
-@router.post("/api/upload_photo/")
-async def upload_photo(
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_upload_photo(
     file: UploadFile = File(...),
-    description: str = Form(...),
-    user_id: int = Form(...),
-    tags: List[str] = Form(...),
+    description: str = Form(None),
+    tags: List[str] = Form(None),
     db: Session = Depends(get_db)
 ):
+    user_id = 1  # Поки немає авторизації
+    tags = await repository_tags.editing_tags(tags)
+
     # Отримуємо завантажений файл та опис
     contents = await file.read()
     filename = file.filename
@@ -42,31 +45,15 @@ async def upload_photo(
     # Отримуємо URL завантаженого фото з відповіді Cloudinary
     photo_url = response["secure_url"]
     
-    photo = await repository_photo.create_photo(
-        user_id, photo_url, description, tags, db
-    )
+    photo = await repository_photo.create_photo(user_id, photo_url, description, tags, db)
     return photo
 
-
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_photo(
-    request: Request, body: PhotoCreate, db: Session = Depends(get_db)
-):
-    user_id = 1  # Поки немає авторизації
-    photo = await repository_photo.create_photo(
-        user_id, body.photo, body.description, body.tags, db
-    )
-    return photo
 
 
 @router.put("/{photo_id}", status_code=status.HTTP_200_OK)
-async def put_photo(
-    request: Request, photo_id: int, body: PhotoCreate, db: Session = Depends(get_db)
-):
+async def put_photo(request: Request, photo_id: int, body: PhotoCreate, db: Session = Depends(get_db)):
     user_id = 1  # Поки немає авторизації
-    photo = await repository_photo.put_photo(
-        user_id, photo_id, body.photo, body.description, body.tags, db
-    )
+    photo = await repository_photo.put_photo(user_id, photo_id, body.photo, body.description, body.tags, db)
     return photo
 
 
@@ -77,7 +64,7 @@ async def delete_photo(request: Request, photo_id: int, db: Session = Depends(ge
     return photo
 
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("", status_code=status.HTTP_200_OK)
 async def get_photos(request: Request, db: Session = Depends(get_db)):
     user_id = 1  # Поки немає авторизації
     photo = await repository_photo.get_photos(user_id, db)
