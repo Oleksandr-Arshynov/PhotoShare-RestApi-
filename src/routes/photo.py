@@ -1,20 +1,34 @@
+from pathlib import Path
 from typing import List
-from fastapi import APIRouter, Depends, status, Request, FastAPI, File, UploadFile, Form
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Request,
+    FastAPI,
+    File,
+    UploadFile,
+    Form,
+)
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
-from src.schemas.photo_schemas import PhotoCreate
+from src.schemas.photo_schemas import PhotoCreate, PhotoUpdate
 
 from src.conf.config import settings
 import cloudinary
 import cloudinary.uploader
+
 
 router = APIRouter(prefix="/photo", tags=["photo"])
 
 
 # Встановлюємо конфігурацію Cloudinary
 cloudinary.config(
-    cloud_name=settings.CLD_NAME, api_key=settings.CLD_API_KEY, api_secret=settings.CLD_API_SECRET
+    cloud_name=settings.CLD_NAME,
+    api_key=settings.CLD_API_KEY,
+    api_secret=settings.CLD_API_SECRET,
 )
 
 
@@ -24,7 +38,7 @@ async def upload_photo(
     description: str = Form(...),
     user_id: int = Form(...),
     tags: List[str] = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Отримуємо завантажений файл та опис
     contents = await file.read()
@@ -38,19 +52,17 @@ async def upload_photo(
         contents,
         folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
         public_id=public_id,  # Ім'я файлу на Cloudinary
-        description=description,
-        tags=tags
+        context = f"alt={description}|user_id={user_id}",
+        tags=tags,
     )
-
     # Отримуємо URL завантаженого фото з відповіді Cloudinary
     photo_url = response["secure_url"]
-    
+
     # Зберігаємо фотографію в базі даних разом із public_id
     photo = await repository_photo.create_photo(
         user_id, photo_url, description, tags, public_id, db
     )
     return photo
-
 
 
 @router.delete("/api/delete_photo/{user_id}/{photo_id}")
@@ -66,6 +78,34 @@ async def delete_photo(user_id: int, photo_id: int, db: Session = Depends(get_db
         return {"message": "Фотографія не знайдена"}
 
 
+@router.put("/api/edit_photo_description/{user_id}/{photo_id}")
+async def edit_photo_description(
+    user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
+):
+    # Перевіряємо, чи існує фотографія з вказаним ID
+    photo = repository_photo.get_photo(user_id, photo_id, db)
+    if photo is None:
+        raise HTTPException(status_code=404, detail="Фотографія не знайдена")
+
+    # Оновлюємо опис фотографії в базі даних
+    photo = repository_photo.update_photo_description(
+        photo_id, new_description, db
+    )
+    
+    # Оновлюємо опис фотографії в Cloudinary
+    try:
+        repository_photo.update_cloudinary_metadata(
+            photo.public_id, new_description
+        )
+    except Exception as e:
+        # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
+        repository_photo.rollback_photo_description(photo_id, db)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
+        )
+
+    return photo
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
