@@ -1,11 +1,47 @@
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, status, Request, FastAPI, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
 from src.schemas.photo_schemas import PhotoCreate
 
+from src.conf.config import settings
+import cloudinary
+import cloudinary.uploader
 
 router = APIRouter(prefix="/photo", tags=["photo"])
+
+
+# Встановлюємо конфігурацію Cloudinary
+cloudinary.config(
+    cloud_name=settings.CLD_NAME, api_key=settings.CLD_API_KEY, api_secret=settings.CLD_API_SECRET
+)
+
+
+@router.post("/api/upload_photo/")
+async def upload_photo(
+    file: UploadFile = File(...),
+    description: str = Form(...),
+    username: str = Form(...),
+    teg: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # Отримуємо завантажений файл та опис
+    contents = await file.read()
+    filename = file.filename
+
+    # Завантажуємо файл в Cloudinary
+    response = cloudinary.uploader.upload(
+        contents,
+        folder=f"uploads/{username}",  # Папка, куди буде завантажено фото
+        public_id=filename,  # Ім'я файлу на Cloudinary
+        description=description,
+        teg=teg# Опис фото
+    )
+
+    # Отримуємо URL завантаженого фото з відповіді Cloudinary
+    photo_url = response["secure_url"]
+
+    return "ok"
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

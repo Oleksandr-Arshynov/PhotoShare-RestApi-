@@ -1,10 +1,7 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, CheckConstraint
 
-try:
-    from src.database.db import Base
-except:
-    from database.db import Base
+from src.database.db import Base
 
 
 class User(Base):
@@ -12,7 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(150), nullable=False, unique=True)
-    password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     avatar = Column(String, nullable=True)
     confirmed = Column(Boolean, default=False)
     role_id = Column(Integer, ForeignKey('role.id'), default=3)
@@ -22,9 +19,9 @@ class User(Base):
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
 
     role = relationship("Role", back_populates="user") 
-    # ban = relationship("Ban", back_populates="users") 
+    # ban = relationship("Ban", back_populates="user") 
     photo = relationship("Photo", back_populates="user")
-    # comment = relationship("Сomment", back_populates="users") 
+    # comment = relationship("Сomment", back_populates="user") 
 
 
 class Role(Base):
@@ -59,6 +56,7 @@ class Photo(Base):
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
     photo = Column(String)
     description = Column(String, nullable=True)
+
 
     user = relationship("User", back_populates="photo")  
     tags = relationship("Tag", secondary="photo_tag_association", backref="photo")
@@ -98,5 +96,5 @@ class PhotoTagAssociation(Base):
 #     rating = Column(Integer)
 #     __table_args__ = (CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),)
 
-#     user = relationship("User", back_populates="ratings")
-#     photo = relationship("Photo", back_populates="rating")
+    # user = relationship("User", back_populates="rating")
+    # photo = relationship("Photo", back_populates="rating")
