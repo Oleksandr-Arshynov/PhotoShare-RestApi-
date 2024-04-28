@@ -1,7 +1,10 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, func, ForeignKey, Boolean, CheckConstraint
 
-from src.database.db import Base
+try:
+    from src.database.db import Base
+except:
+    from database.db import Base
 
 
 class User(Base):
@@ -55,6 +58,7 @@ class Photo(Base):
     created_at = Column('created_at', DateTime, default=func.now(), nullable=True)
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
     photo = Column(String)
+    public_id = Column(String)
     description = Column(String, nullable=True)
 
 
