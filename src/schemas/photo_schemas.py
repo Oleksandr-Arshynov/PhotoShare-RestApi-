@@ -23,4 +23,4 @@ class Photo(PhotoBase):
     tags: List[Tag]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
