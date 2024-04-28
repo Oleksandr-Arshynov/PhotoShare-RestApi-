@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from src.conf.config import settings
 import cloudinary.uploader
+import uuid
+
 
 # Встановлюємо конфігурацію Cloudinary
 cloudinary.config(
@@ -19,13 +21,12 @@ cloudinary.config(
 async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
     # Отримуємо завантажений файл та опис
     contents = await file.read()
-    filename = file.filename
 
     # Завантажуємо файл в Cloudinary
     response = cloudinary.uploader.upload(
         contents,
         folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-        public_id=filename,  # Ім'я файлу на Cloudinary
+        public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
         description=description,
         tags=tags
     )
@@ -59,7 +60,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
         response = cloudinary.uploader.upload(
             contents,
             folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-            public_id=filename,  # Ім'я файлу на Cloudinary
+            public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
             description=description,
             tags=tags
         )
