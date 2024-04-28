@@ -5,9 +5,8 @@ from sqlalchemy.orm import Session
 from src.database.models import User
 from src.database.db import SessionLocal, get_db
 from passlib.context import CryptContext
+from src.conf.config import settings
 
-SECRET_KEY = "supersecretkey123"  # Мега надійний ключ
-ALGORITHM = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -35,7 +34,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
         expires_delta if expires_delta else timedelta(minutes=15)
     )
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY_JWT, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -59,7 +58,7 @@ def get_token(authorization: str = Header(...)):
 # Отримання поточного користувача з токена
 def get_current_user(token: str = Depends(get_token), db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY_JWT, algorithms=[settings.ALGORITHM])
         username = payload.get("sub")
         if not username:
             raise HTTPException(

@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, status, Request, FastAPI, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from src.database.db import get_db
@@ -21,8 +22,8 @@ cloudinary.config(
 async def upload_photo(
     file: UploadFile = File(...),
     description: str = Form(...),
-    username: str = Form(...),
-    teg: str = Form(...),
+    user_id: int = Form(...),
+    tags: List[str] = Form(...),
     db: Session = Depends(get_db)
 ):
     # Отримуємо завантажений файл та опис
@@ -32,16 +33,19 @@ async def upload_photo(
     # Завантажуємо файл в Cloudinary
     response = cloudinary.uploader.upload(
         contents,
-        folder=f"uploads/{username}",  # Папка, куди буде завантажено фото
+        folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
         public_id=filename,  # Ім'я файлу на Cloudinary
         description=description,
-        teg=teg# Опис фото
+        tags=tags
     )
 
     # Отримуємо URL завантаженого фото з відповіді Cloudinary
     photo_url = response["secure_url"]
-
-    return "ok"
+    
+    photo = await repository_photo.create_photo(
+        user_id, photo_url, description, tags, db
+    )
+    return photo
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
