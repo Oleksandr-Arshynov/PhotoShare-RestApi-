@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
 from src.repository import tags as repository_tags
-from src.schemas.photo_schemas import PhotoCreate
 
 
 
@@ -15,6 +14,7 @@ router = APIRouter(prefix="/photo", tags=["photo"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_upload_photo(
+    request: Request,
     file: UploadFile = File(...),
     description: str = Form(None),
     tags: List[str] = Form(None),
@@ -28,9 +28,17 @@ async def create_upload_photo(
 
 
 @router.put("/{photo_id}", status_code=status.HTTP_200_OK)
-async def put_photo(request: Request, photo_id: int, body: PhotoCreate, db: Session = Depends(get_db)):
+async def put_photo(
+    request: Request,
+    photo_id: int,
+    file: UploadFile = File(...),
+    description: str = Form(None),
+    tags: List[str] = Form(None),
+    db: Session = Depends(get_db)):
+
     user_id = 1  # Поки немає авторизації
-    photo = await repository_photo.put_photo(user_id, photo_id, body.photo, body.description, body.tags, db)
+    tags = await repository_tags.editing_tags(tags)
+    photo = await repository_photo.put_photo(user_id, photo_id, file, description, tags, db)
     return photo
 
 

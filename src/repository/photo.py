@@ -48,12 +48,24 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
 
 
 
-async def put_photo(user_id: int, photo_id: int, photo: str, description: str, tags: list, db: Session) -> Tag:
+async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Tag:
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
     if post_photo: # перевіряє що photo знайдено вдало
-        if photo: # перевіряє що photo не пусте 
-            post_photo.photo = photo
+        contents = await file.read()
+        filename = file.filename
+        cloudinary.uploader.destroy(post_photo.public_id)
+        # Завантажуємо файл в Cloudinary
+        response = cloudinary.uploader.upload(
+            contents,
+            folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
+            public_id=filename,  # Ім'я файлу на Cloudinary
+            description=description,
+            tags=tags
+        )
+        # Отримуємо URL завантаженого фото з відповіді Cloudinary
+        post_photo.photo = response["secure_url"]
+        post_photo.public_id = response["public_id"]
 
         if description: # перевіряє що description не пусте 
             post_photo.description = description
