@@ -56,7 +56,7 @@ class Photo(Base):
     updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
     photo = Column(String)
     description = Column(String, nullable=True)
-
+    public_id = Column(String)
 
     user = relationship("User", back_populates="photo")  
     tags = relationship("Tag", secondary="photo_tag_association", backref="photo")

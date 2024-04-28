@@ -30,11 +30,14 @@ async def upload_photo(
     contents = await file.read()
     filename = file.filename
 
+    # Генеруємо унікальний public_id
+    public_id = f"{user_id}/{filename}"
+
     # Завантажуємо файл в Cloudinary
     response = cloudinary.uploader.upload(
         contents,
         folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-        public_id=filename,  # Ім'я файлу на Cloudinary
+        public_id=public_id,  # Ім'я файлу на Cloudinary
         description=description,
         tags=tags
     )
@@ -42,10 +45,27 @@ async def upload_photo(
     # Отримуємо URL завантаженого фото з відповіді Cloudinary
     photo_url = response["secure_url"]
     
+    # Зберігаємо фотографію в базі даних разом із public_id
     photo = await repository_photo.create_photo(
-        user_id, photo_url, description, tags, db
+        user_id, photo_url, description, tags, public_id, db
     )
     return photo
+
+
+
+@router.delete("/api/delete_photo/{user_id}/{photo_id}")
+async def delete_photo(user_id: int, photo_id: int, db: Session = Depends(get_db)):
+    photo = await repository_photo.get_photo(user_id, photo_id, db)
+    if photo:
+        # Видалення фотографії з Cloudinary
+        cloudinary.uploader.destroy(photo.public_id, invalidate=True)
+        # Видалення фотографії з бази даних
+        await repository_photo.delete_photo(user_id, photo_id, db)
+        return {"message": "Фотографія успішно видалена"}
+    else:
+        return {"message": "Фотографія не знайдена"}
+
+
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

@@ -1,3 +1,4 @@
+from typing import List
 from src.database.models import Tag, Photo, PhotoTagAssociation
 from src.repository import tags as repository_tag
 from sqlalchemy import and_
@@ -10,19 +11,20 @@ from sqlalchemy.orm import Session
 
 
 
-async def create_photo(user_id: int, photo: str, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
-    photo = Photo(photo=photo, description=description, user_id=user_id)
+async def create_photo(user_id: int, photo_url: str, description: str, tags: List[str], public_id: str, db: Session) -> Photo:
+    photo = Photo(photo=photo_url, description=description, user_id=user_id, public_id=public_id)
 
-    if photo: # перевіряє що photo вдало створено
+    if photo:
         db.add(photo)
         db.commit()
-        tags = await repository_tag.create_tag(photo_id=photo.id, tags=tags, db=db) # додає теги
+        tags = await repository_tag.create_tag(photo_id=photo.id, tags=tags, db=db)
         photo = db.query(Photo).filter(Photo.id==photo.id).first()
 
-        for num in range(0, len(tags)): # без цього не повертає теги 
+        for num in range(0, len(tags)):
             photo.tags[num].name
 
-    return photo 
+    return photo
+
 
 
 
