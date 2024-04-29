@@ -14,7 +14,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
-from src.schemas.photo_schemas import PhotoCreate, PhotoUpdate
+from src.schemas.photo_schemas import PhotoCreate
 
 from src.conf.config import settings
 import cloudinary
@@ -69,6 +69,7 @@ async def upload_photo(
 async def delete_photo(user_id: int, photo_id: int, db: Session = Depends(get_db)):
     photo = await repository_photo.get_photo(user_id, photo_id, db)
     if photo:
+        print(photo.public_id)
         # Видалення фотографії з Cloudinary
         cloudinary.uploader.destroy(photo.public_id, invalidate=True)
         # Видалення фотографії з бази даних
