@@ -13,31 +13,19 @@ import cloudinary.uploader
 import uuid
 
 
-# Встановлюємо конфігурацію Cloudinary
-cloudinary.config(
-    cloud_name=settings.CLD_NAME, api_key=settings.CLD_API_KEY, api_secret=settings.CLD_API_SECRET
-)
-
-
-async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
-    # Отримуємо завантажений файл та опис
-    contents = await file.read()
-
-    # Завантажуємо файл в Cloudinary
-    response = cloudinary.uploader.upload(
-        contents,
-        folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-        public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
-        description=description,
-        tags=tags
+async def create_photo(
+    user_id: int,
+    photo_url: str,
+    description: str,
+    tags: List[str],
+    public_id: str,
+    db: Session,
+) -> Photo:
+    photo = Photo(
+        photo=photo_url, description=description, user_id=user_id, public_id=public_id
     )
-    # Отримуємо URL завантаженого фото з відповіді Cloudinary
-    photo_url = response["secure_url"]
-    public_id = response["public_id"]
-    
-    photo = Photo(photo=photo_url, description=description, user_id=user_id, public_id=public_id)
-    
-    if photo: # перевіряє що photo вдало створено
+
+    if photo:
         db.add(photo)
         db.commit()
         tags = await repository_tag.create_tag(photo_id=photo.id, tags=tags, db=db)
@@ -58,21 +46,9 @@ async def put_photo(
         .first()
     )
 
-    if post_photo: # перевіряє що photo знайдено вдало
-        contents = await file.read()
-        filename = file.filename
-        cloudinary.uploader.destroy(post_photo.public_id)
-        # Завантажуємо файл в Cloudinary
-        response = cloudinary.uploader.upload(
-            contents,
-            folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-            public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
-            description=description,
-            tags=tags
-        )
-        # Отримуємо URL завантаженого фото з відповіді Cloudinary
-        post_photo.photo = response["secure_url"]
-        post_photo.public_id = response["public_id"]
+    if post_photo:  # перевіряє що photo знайдено вдало
+        if photo:  # перевіряє що photo не пусте
+            post_photo.photo = photo
 
         if description:  # перевіряє що description не пусте
             post_photo.description = description
@@ -110,7 +86,6 @@ async def delete_photo(
         .filter(and_(Photo.user_id == user_id, Photo.id == photo_id))
         .first()
     )
-
     if photo: # перевіряє що photo знайдено вдало
         cloudinary.uploader.destroy(photo.public_id)
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
