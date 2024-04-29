@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from dependencies_auth import get_current_user
 from src.conf.messages import ACCESS_TOKEN_EXPIRE_MINUTES
 from src.database.db import get_db
 from src.auth.dependencies_auth import (
@@ -11,7 +12,7 @@ from src.auth.dependencies_auth import (
     require_role,
 )
 from src.schemas.schemas_auth import Token
-from src.database.models import User
+from src.database.models import User, Photo, Comment
 from src.schemas.user_schemas import UserCreate
 
 
@@ -25,9 +26,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Користувач вже існує")
 
-    # Визначаємо роль: перший користувач - адмін, решта - юзер
-    is_admin = db.query(User).count() == 0
-    role_id = 1 if is_admin else 3
+    # Перший користувач - адмін, другий - модератор, решта - юзери
+    user_count = db.query(User).count()
+    if user_count == 0:
+        role_id = 1  # Адміністратор
+    elif user_count == 1:
+        role_id = 2  # Модератор
+    else:
+        role_id = 3  # Звичайний користувач
 
     hashed_password = get_password_hash(user.password)
     new_user = User(
@@ -66,12 +72,125 @@ def login_user(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# Ендпоінт, доступний лише для адміністраторів
-@router.get("/admin-endpoint", dependencies=[Depends(require_role(1))])
-def admin_only():
-    return {"msg": "Цей ендпоінт доступний лише для адміністраторів"}
+# АДМІНІСТРАТОР
+router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Ендпоінт перегляду всіх коментарів
+@router.get("/comments", dependencies=[Depends(require_role(1))])  # Доступ лише для адміністратора
+def get_all_comments(db: Session = Depends(get_db)):
+    comments = db.query(Comment).all()
+    return comments
+
+# Ендпоінт перегляду всіх фото
+@router.get("/photos", dependencies=[Depends(require_role(1))])  # Доступ лише для адміністратора
+def get_all_photos(db: Session = Depends(get_db)):
+    photos = db.query(Photo).all()
+    return photos
+
+# Ендпоінт видалення користувача за ID
+@router.delete("/delete-user/{user_id}", dependencies=[Depends(require_role(1))])
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Користувача не знайдено")
+    
+    db.delete(user)
+    db.commit()
+    
+    return {"msg": f"Користувач {user.username} видалений"}
 
 
-@router.get("/moderator-endpoint", dependencies=[Depends(require_role(2))])
-def moderator_only():
-    return {"msg": "Цей ендпоінт доступний лише для модераторів"}
+# МОДЕРАТОР
+router = APIRouter(prefix="/moderator", tags=["moderator"])
+
+# Ендпоінт перегляду всіх коментарів
+@router.get("/comments", dependencies=[Depends(require_role(2))])
+def get_all_comments(db: Session = Depends(get_db)):
+    comments = db.query(Comment).all()
+    return comments
+
+# Ендпоінт видалення окремого коментаря
+@router.delete("/delete-comment/{comment_id}", dependencies=[Depends(require_role(2))])
+def delete_comment(comment_id: int, db: Session = Depends(get_db)):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Коментар не знайдено")
+    
+    db.delete(comment)
+    db.commit()
+    
+    return {"msg": "Коментар видалено"}
+
+# Ендпоінт перегляду всіх фото
+@router.get("/photos", dependencies=[Depends(require_role(2))])
+def get_all_photos(db: Session = Depends(get_db)):
+    photos = db.query(Photo).all()
+    return photos
+
+# Ендпоінт видалення окремого фото
+@router.delete("/delete-photo/{photo_id}", dependencies=[Depends(require_role(2))])
+def delete_photo(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Фото не знайдено")
+    
+    db.delete(photo)
+    db.commit()
+    
+    return {"msg": "Фото видалено"}
+
+
+# ПРОСТИЙ КОРИСТУВАЧ
+router = APIRouter(prefix="/user", tags=["user"])
+
+# Ендпоінт перегляду всіх коментарів інших користувачів
+@router.get("/comments")
+def get_all_comments(db: Session = Depends(get_db)):
+    comments = db.query(Comment).all()
+    return comments
+
+# Ендпоінт перегляду всіх фото інших користувачів
+@router.get("/photos")
+def get_all_photos(db: Session = Depends(get_db)):
+    photos = db.query(Photo).all()
+    return photos
+
+# Видалення власного фото
+@router.delete("/delete-photo/{photo_id}")
+def delete_own_photo(
+    photo_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Шукаємо фото за ID та перевіряємо, чи є власником поточний користувач
+    photo = db.query(Photo).filter(Photo.id == photo_id, Photo.owner_id == current_user.id).first()
+    if not photo:
+        raise HTTPException(
+            status_code=404, 
+            detail="Фото не знайдено або ви не маєте дозволу видалити це фото"
+        )
+    
+    db.delete(photo)
+    db.commit()
+    
+    return {"msg": "Фото успішно видалено"}
+
+# Видалення власного коментаря
+@router.delete("/delete-comment/{comment_id}")
+def delete_own_comment(
+    comment_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    # Перевіряємо, чи існує коментар і чи належить він поточному користувачу
+    comment = db.query(Comment).filter(Comment.id == comment_id, Comment.owner_id == current_user.id).first()
+    if not comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Коментар не знайдено або ви не маєте дозволу видалити цей коментар"
+        )
+    
+    db.delete(comment)
+    db.commit()
+    
+    return {"msg": "Коментар успішно видалено"}
