@@ -116,14 +116,9 @@ async def create_upload_photo(
     db: Session = Depends(get_db)
 ):
     user_id = 1  # Поки немає авторизації
-    contents = await file.read()
-    filename = file.filename
-
-    # Генеруємо унікальний public_id
-    public_id = f"{user_id}/{filename}"
     
     tags = await repository_tags.editing_tags(tags)
-    photo = await repository_photo.create_photo(user_id, file, description, tags, public_id, db)
+    photo = await repository_photo.create_photo(user_id, file, description, tags, db)
     return photo
 
 
