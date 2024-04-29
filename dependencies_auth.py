@@ -3,7 +3,7 @@ from jose import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from database.models import User
-from database import SessionLocal
+from database.db import SessionLocal
 from passlib.context import CryptContext
 
 SECRET_KEY = "supersecretkey123"  # Мега надійний ключ
