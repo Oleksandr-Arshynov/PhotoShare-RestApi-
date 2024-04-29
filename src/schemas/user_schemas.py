@@ -14,7 +14,7 @@ class Role(RoleBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserBase(BaseModel):
@@ -39,7 +39,7 @@ class User(UserBase):
     role: Role
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class LogoutUserBase(BaseModel):
@@ -56,4 +56,4 @@ class LogoutUser(LogoutUserBase):
     user: User
 
     class Config:
-        orm_mode = True
+        from_attributes = True
