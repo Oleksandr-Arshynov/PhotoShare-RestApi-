@@ -60,7 +60,6 @@ class Photo(Base):
     photo = Column(String)
     public_id = Column(String)
     description = Column(String, nullable=True)
-    public_id = Column(String)
     transformation_url_cartoon = Column(String)
     transformation_url_grayscale = Column(String)
     transformation_url_mask = Column(String)
