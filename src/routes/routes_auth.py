@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
-from dependencies_auth import get_current_user
+from src.auth.dependencies_auth import get_current_user
 from src.conf.messages import ACCESS_TOKEN_EXPIRE_MINUTES
 from src.database.db import get_db
 from src.auth.dependencies_auth import (
@@ -15,7 +15,6 @@ from src.schemas.schemas_auth import Token
 from src.database.models import User, Photo, Comment
 from src.schemas.coment_schemas import CommentUpdate
 from src.schemas.photo_schemas import PhotoUpdate
-
 from src.schemas.user_schemas import UserCreate
 
 
