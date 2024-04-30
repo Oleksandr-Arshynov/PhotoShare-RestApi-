@@ -61,6 +61,9 @@ class Photo(Base):
     public_id = Column(String)
     description = Column(String, nullable=True)
     public_id = Column(String)
+    transformation_url_cartoon = Column(String)
+    transformation_url_grayscale = Column(String)
+    transformation_url_mask = Column(String)
 
     user = relationship("User", back_populates="photo")  
     tags = relationship("Tag", secondary="photo_tag_association", backref="photo")
