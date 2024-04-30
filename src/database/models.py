@@ -24,7 +24,7 @@ class User(Base):
     role = relationship("Role", back_populates="user") 
     # ban = relationship("Ban", back_populates="user") 
     photo = relationship("Photo", back_populates="user")
-    # comment = relationship("Сomment", back_populates="user") 
+    comments = relationship("Comment", back_populates="user")
 
 
 class Role(Base):
@@ -75,15 +75,15 @@ class PhotoTagAssociation(Base):
     tag_id = Column(Integer, ForeignKey("tag.id"), primary_key=True)
 
 
-# class Comment(Base):
-#     __tablename__ = "comments"
-#     id = Column(Integer, primary_key=True)
-#     photo_id = Column(Integer, ForeignKey('photos.id'), nullable=False)  
-#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
-#     comment = Column(String(255), nullable=False)
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True)
+    photo_id = Column(Integer, ForeignKey('photo.id'), nullable=False)  
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False) 
+    comment = Column(String(255), nullable=False)
 
-#     photo = relationship("Photo", back_populates="comments") 
-#     user = relationship("User", back_populates="comments")
+    photo = relationship("Photo", back_populates="comments") 
+    user = relationship("User", back_populates="comments")
 
 
 # class LogoutUser(Base):

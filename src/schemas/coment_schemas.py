@@ -1,23 +1,24 @@
+from pydantic import Field
 from pydantic import BaseModel
+from typing import List, Optional
 
-from schemas.photo_schemas import Photo
-from schemas.user_schemas import User
-
-
-class CommentBase(BaseModel):
-    photo_id: int
-    user_id: int
-    comment: str
+from src.schemas.photo_schemas import Photo
+from src.schemas.user_schemas import User
 
 
-class CommentCreate(CommentBase):
+class CommentSchema(BaseModel):
+    comment: str = Field(min_length=1, max_length=255)
+
+
+class CommentUpdateSchema(BaseModel):
     pass
 
-
-class Comment(CommentBase):
+class CommentResponse(BaseModel):
     id: int
-    photo: Photo
-    user: User
+    user_id: int
+    photo_id: int
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     class Config:
         from_attributes = True

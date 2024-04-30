@@ -5,12 +5,14 @@ from src.database.db import get_db
 from src.database.models import User, Role
 from src.routes import photo as router_photo
 from src.routes import routes_auth
+from src.routes import comment as router_comment
 
 app = FastAPI()
 
 
 app.include_router(router_photo.router, prefix="/api")
 app.include_router(routes_auth.router, prefix="/api")
+app.include_router(router_comment.router, prefix="/api")
 
 
 @app.get("/")
