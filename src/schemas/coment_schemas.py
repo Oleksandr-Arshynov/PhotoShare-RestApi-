@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from schemas.photo_schemas import Photo
-from schemas.user_schemas import User
+from src.schemas.photo_schemas import Photo
+from src.schemas.user_schemas import User
 
 
 class CommentBase(BaseModel):
