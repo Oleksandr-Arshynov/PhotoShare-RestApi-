@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
-from src.schemas.coment_schemas import CommentResponse,CommentSchema, CommentUpdateSchema
-from src.database.models import Comment
+from src.repository import photo as repository_photo
+from src.schemas.coment_schemas import CommentResponse,CommentSchema, CommentUpdateSchema, CommentBase
+from src.database.models import Comment, Photo
 from src.database.db import get_db
 from src.conf import messages
+from src.repository.comment import create_comment_rep, update_comment_rep, delete_comment_rep
 
 router = APIRouter(
     prefix="/comments",
@@ -12,37 +13,58 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=CommentResponse)
-def create_comment(comment: CommentSchema, user_id: int,  photo_id: int, db: Session = Depends(get_db)):
+async def create_comment(comment: CommentSchema, user_id: int,  photo_id: int, db: Session = Depends(get_db)):
 
-    existing_comment = db.query(Comment).filter(Comment.user_id == user_id, Comment.photo_id == photo_id).first()
-    if existing_comment:
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=messages.COMMENT_ALREADY_EXISTS
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=messages.PHOTO_NOT_FOUND
         )
-    return create_comment(comment, user_id, photo_id, db)
+    else:
+        comment = create_comment_rep(db, user_id, photo_id, comment)
+        return comment
+    
 
 
 @router.put("/{comment_id}")
-def update_comment(updated_comment: CommentUpdateSchema,photo_id: int, user_id: int, db: Session = Depends(get_db)):
+async def update_comment(updated_comment: CommentUpdateSchema,comment_id: int, photo_id: int, user_id: int, db: Session = Depends(get_db)):
 
-    existing_comment = db.query(Comment).filter(Comment.user_id == user_id, Comment.photo_id == photo_id).first()
-    if not existing_comment:
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=messages.COMMENT_NOT_FOUND
+            detail=messages.PHOTO_NOT_FOUND
         )
-    return update_comment(updated_comment, user_id, photo_id,db)
+    else:
+        comment = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id, Comment.user_id == user_id).first()
+        if not comment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=messages.COMMENT_NOT_FOUND
+            )
+
+        comment = update_comment_rep(db, comment_id, updated_comment)
+        return comment
 
 
 
 @router.delete("/{comment_id}")
-def delete_comment(comment_id: int, photo_id: int, db: Session = Depends(get_db)):
+def delete_comment(comment_id: int,user_id:int, photo_id: int, db: Session = Depends(get_db)):
 
-    existing_comment = db.query(Comment).filter(Comment.photo_id == photo_id, Comment.user_id == comment_id).first()
-    if not existing_comment:
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=messages.CONTACT_NOT_FOUND
+            detail=messages.PHOTO_NOT_FOUND
         )
-    return delete_comment( comment_id, photo_id,db)
+    else:
+        comment = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id, Comment.user_id == user_id).first()
+        if not comment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=messages.COMMENT_NOT_FOUND
+            )
+
+        comment = delete_comment_rep(db,photo_id, comment_id)
+        return comment

@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
 
 
-from src.schemas.coment_schemas import CommentSchema, CommentUpdateSchema
+from src.schemas.coment_schemas import CommentSchema, CommentUpdateSchema, CommentBase
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from src.conf.config import settings
@@ -13,25 +13,25 @@ from src.conf import messages
 
 
 
-def create_comment(db: Session,user_id: int,photo_id: int, comment: CommentSchema):
-
+def create_comment_rep(db: Session,user_id: int,photo_id: int, comment: CommentSchema) :
+    # new_comment = Comment(comment.photo_id, comment.user_id,comment.comment)
     new_comment = Comment(**comment.dict(), user_id=user_id, photo_id=photo_id)
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
     return new_comment
 
-def update_comment(db: Session, user_id: int, photo_id: int, updated_comment: CommentUpdateSchema) :
-    comment = db.query(Comment).filter(Comment.user_id == user_id, Comment.photo_id == photo_id).first()
-    if comment:
-        comment.content = updated_comment.content
-        db.commit()
-        db.refresh(comment)
-    return comment
+def update_comment_rep(db: Session, comment_id: int, updated_comment: CommentUpdateSchema) :
+    comment_to_update = db.query(Comment).filter(Comment.id == comment_id).first()
+    comment_to_update.comment = updated_comment.comment
+    db.commit()
+    db.refresh(comment_to_update)
+    return comment_to_update
 
-def delete_comment(db: Session, photo_id: int, user_id: int):
-    comment = db.query(Comment).filter(Comment.user_id == user_id, Comment.photo_id == photo_id).first()
-    if comment:
-        db.delete(comment)
+
+def delete_comment_rep(db: Session, photo_id: int, comment_id: int):
+    comment_to_delete = db.query(Comment).filter(and_(Comment.id == comment_id, Comment.photo_id == photo_id)).first()
+    if comment_to_delete:
+        db.delete(comment_to_delete)
         db.commit()
-    return comment
+        return comment_to_delete

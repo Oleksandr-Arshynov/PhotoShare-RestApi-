@@ -10,8 +10,10 @@ class CommentSchema(BaseModel):
     comment: str = Field(min_length=1, max_length=255)
 
 
-class CommentUpdateSchema(BaseModel):
+class CommentUpdateSchema(CommentSchema):
     pass
+
+
 
 class CommentResponse(BaseModel):
     id: int
@@ -21,6 +23,11 @@ class CommentResponse(BaseModel):
     updated_at: Optional[str] = None
 
 
+class CommentBase(BaseModel):
+    photo_id: int
+    user_id: int
+    comment: str
+    
 class CommentUpdate(CommentBase):
     id: int
     photo: Photo
