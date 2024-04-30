@@ -60,11 +60,12 @@ class Photo(Base):
     photo = Column(String)
     public_id = Column(String)
     description = Column(String, nullable=True)
-    public_id = Column(String)
     transformation_url_cartoon = Column(String)
     transformation_url_grayscale = Column(String)
     transformation_url_mask = Column(String)
-
+    transformation_url_tilt = Column(String)
+    
+    comments = relationship("Comment", back_populates="photo")
     user = relationship("User", back_populates="photo")  
     tags = relationship("Tag", secondary="photo_tag_association", backref="photo")
 
@@ -89,7 +90,7 @@ class Comment(Base):
 # class LogoutUser(Base):
 #     __tablename__ = "logout_users"
 #     id = Column(Integer, primary_key=True)
-#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False) 
+#     user_id = Column(Integer, ForeignKey('user.id'), nullable=False) 
 #     access_token = Column(String)
 
 #     user = relationship("User", back_populates="logout_users")

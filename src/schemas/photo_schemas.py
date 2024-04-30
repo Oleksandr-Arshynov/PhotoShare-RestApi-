@@ -22,5 +22,13 @@ class Photo(PhotoBase):
     user: User
     tags: List[Tag]
 
+
+class PhotoUpdate(PhotoBase):
+    id: int
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    user: User
+    tags: List[Tag]
+
     class Config:
         from_attributes = True

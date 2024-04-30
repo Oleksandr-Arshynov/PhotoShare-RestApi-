@@ -20,5 +20,11 @@ class CommentResponse(BaseModel):
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
+
+class CommentUpdate(CommentBase):
+    id: int
+    photo: Photo
+    user: User
+
     class Config:
         from_attributes = True

@@ -12,7 +12,9 @@ from src.auth.dependencies_auth import (
     require_role,
 )
 from src.schemas.schemas_auth import Token
-from src.database.models import User, Photo
+from src.database.models import User, Photo, Comment
+from src.schemas.coment_schemas import CommentUpdate
+from src.schemas.photo_schemas import PhotoUpdate
 from src.schemas.user_schemas import UserCreate
 
 
@@ -72,20 +74,45 @@ def login_user(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# АДМІНІСТРАТОР
+# ----------АДМІНІСТРАТОР----------
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 # Ендпоінт перегляду всіх коментарів
-@router.get("/comments", dependencies=[Depends(require_role(1))])  # Доступ лише для адміністратора
+@router.get("/comments", dependencies=[Depends(require_role(1))])  
 def get_all_comments(db: Session = Depends(get_db)):
     comments = db.query(Comment).all()
     return comments
 
+# Ендпоінт видалення окремого коментаря для адміністратора
+@router.delete("/delete-comment/{comment_id}", dependencies=[Depends(require_role(1))])
+def delete_comment(comment_id: int, db: Session = Depends(get_db)):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Коментар не знайдено")
+    
+    db.delete(comment)
+    db.commit()
+    
+    return {"msg": "Коментар видалено"}
+
 # Ендпоінт перегляду всіх фото
-@router.get("/photos", dependencies=[Depends(require_role(1))])  # Доступ лише для адміністратора
+@router.get("/photos", dependencies=[Depends(require_role(1))])  
 def get_all_photos(db: Session = Depends(get_db)):
     photos = db.query(Photo).all()
     return photos
+
+# Ендпоінт видалення окремого фото для адміністратора
+@router.delete("/delete-photo/{photo_id}", dependencies=[Depends(require_role(1))])
+def delete_photo(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Фото не знайдено")
+    
+    db.delete(photo)
+    db.commit()
+    
+    return {"msg": "Фото видалено"}
 
 # Ендпоінт видалення користувача за ID
 @router.delete("/delete-user/{user_id}", dependencies=[Depends(require_role(1))])
@@ -100,7 +127,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"msg": f"Користувач {user.username} видалений"}
 
 
-# МОДЕРАТОР
+# ----------МОДЕРАТОР----------
+
 router = APIRouter(prefix="/moderator", tags=["moderator"])
 
 # Ендпоінт перегляду всіх коментарів
@@ -109,7 +137,7 @@ def get_all_comments(db: Session = Depends(get_db)):
     comments = db.query(Comment).all()
     return comments
 
-# Ендпоінт видалення окремого коментаря
+# Ендпоінт видалення окремого коментаря для модератора
 @router.delete("/delete-comment/{comment_id}", dependencies=[Depends(require_role(2))])
 def delete_comment(comment_id: int, db: Session = Depends(get_db)):
     comment = db.query(Comment).filter(Comment.id == comment_id).first()
@@ -127,7 +155,7 @@ def get_all_photos(db: Session = Depends(get_db)):
     photos = db.query(Photo).all()
     return photos
 
-# Ендпоінт видалення окремого фото
+# Ендпоінт видалення окремого фото для модератора
 @router.delete("/delete-photo/{photo_id}", dependencies=[Depends(require_role(2))])
 def delete_photo(photo_id: int, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
@@ -140,7 +168,8 @@ def delete_photo(photo_id: int, db: Session = Depends(get_db)):
     return {"msg": "Фото видалено"}
 
 
-# ПРОСТИЙ КОРИСТУВАЧ
+# ----------ЮЗЕР----------
+
 router = APIRouter(prefix="/user", tags=["user"])
 
 # Ендпоінт перегляду всіх коментарів інших користувачів
@@ -194,3 +223,45 @@ def delete_own_comment(
     db.commit()
     
     return {"msg": "Коментар успішно видалено"}
+
+# Редагування власного коментаря
+@router.put("/update-comment/{comment_id}")
+def update_own_comment(
+    comment_id: int,
+    comment_update: CommentUpdate,  # Коментар, що містить новий текст
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = db.query(Comment).filter(Comment.id == comment_id, Comment.owner_id == current_user.id).first()
+    if not comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Коментар не знайдено або ви не маєте права його редагувати"
+        )
+
+    comment.text = comment_update.text
+    db.commit()
+    
+    return {"msg": "Коментар успішно оновлено"}
+
+# Редагування власного фото
+@router.put("/update-photo/{photo_id}")
+def update_own_photo(
+    photo_id: int,
+    photo_update: PhotoUpdate,  # Об'єкт із новим описом або іншими метаданими
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    photo = db.query(Photo).filter(Photo.id == photo_id, Photo.owner_id == current_user.id).first()
+    if not photo:
+        raise HTTPException(
+            status_code=404,
+            detail="Фото не знайдено або ви не маєте права його редагувати"
+        )
+
+    if photo_update.description:
+        photo.description = photo_update.description
+    
+    db.commit()
+    
+    return {"msg": "Фото успішно оновлено"}
