@@ -205,3 +205,40 @@ async def transformation_photo_mask(
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
     }
+
+   
+
+
+@router.post("/tilt/{photo_id}", status_code=status.HTTP_200_OK)
+async def transformation_photo_tilt(
+    request: Request, photo_id: int, db: Session = Depends(get_db)
+):
+    user_id = 5  # Тимчасово, доки немає автентифікації
+    photo = await repository_photo.get_photo(user_id, photo_id, db)
+
+    # Зберегти оригінальне зображення в Cloudinary
+    original_image = cloudinary.uploader.upload(photo.photo)
+
+    # Виконати трансформації за допомогою Cloudinary
+    transformed_image = cloudinary.uploader.upload(
+        photo.photo,
+        transformation=[
+                {"height": 400, "width": 250, "crop": "fill"},
+                {"angle": 20},
+                {"effect": "outline", "color": "brown"},
+                {"quality": "auto"},
+                {"fetch_format": "auto"}
+            ],
+    )
+
+    # Оновити URL трансформованого зображення та оригінального зображення у базі даних
+    photo.transformation_url_tilt = transformed_image["secure_url"]
+    photo.photo = original_image["secure_url"]
+    db.add(photo)
+    db.commit()
+
+    # Повернути URL трансформованого зображення та оригінального зображення
+    return {
+        "transformed_image_url": transformed_image["secure_url"],
+        "original_image_url": original_image["secure_url"],
+    }

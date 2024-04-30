@@ -64,6 +64,7 @@ class Photo(Base):
     transformation_url_cartoon = Column(String)
     transformation_url_grayscale = Column(String)
     transformation_url_mask = Column(String)
+    transformation_url_tilt = Column(String)
 
     user = relationship("User", back_populates="photo")  
     tags = relationship("Tag", secondary="photo_tag_association", backref="photo")
