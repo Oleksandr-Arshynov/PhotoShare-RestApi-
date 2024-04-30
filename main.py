@@ -5,14 +5,12 @@ from src.database.db import get_db
 from src.database.models import User, Role
 from src.routes import photo as router_photo
 from src.routes import routes_auth
-from src.service import create_qr_code as poutes_qr
 
 app = FastAPI()
 
 
 app.include_router(router_photo.router, prefix="/api")
 app.include_router(routes_auth.router, prefix="/api")
-app.include_router(poutes_qr.router, prefix="/api")
 
 @app.get("/")
 async def home(request: Request, db: Session = Depends(get_db)):
