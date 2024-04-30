@@ -19,5 +19,11 @@ class Comment(CommentBase):
     photo: Photo
     user: User
 
+
+class CommentUpdate(CommentBase):
+    id: int
+    photo: Photo
+    user: User
+
     class Config:
         from_attributes = True
