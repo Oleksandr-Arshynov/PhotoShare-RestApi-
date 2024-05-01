@@ -26,12 +26,68 @@ This project is an API for a photo gallery with the ability to add comments. Use
     python main.py
 
 
-Project Structure
+## Usage
 
-    src/: Directory where the application source code is stored.
-    database/: Directory containing models and utility functions for interacting with the database.
-    routes/: Directory with route files for different parts of the application's functionality (e.g., photos, authentication, comments).
-    main.py: Main application file where the FastAPI instance is created and routes are configured.
-    README.md: This file containing information about the project and its usage.
-    schemas/:
-    tests/: Directory
+### Upload Photo
+- **Endpoint:** `/photo/`
+- **Method:** POST
+- **Description:** Uploads a new photo.
+- **Parameters:**
+  - `file`: The photo file to upload (required).
+  - `description`: Description of the photo (optional).
+  - `tags`: List of tags for the photo (optional).
+- **Response:** Returns the uploaded photo details.
+
+### Edit Photo Description
+- **Endpoint:** `/photo/edit_photo_description/{user_id}/{photo_id}`
+- **Method:** PUT
+- **Description:** Edits the description of an existing photo.
+- **Parameters:**
+  - `user_id`: User ID of the photo owner.
+  - `photo_id`: ID of the photo to edit.
+  - `new_description`: New description for the photo.
+- **Response:** Returns the updated photo details.
+
+### Transformations
+
+#### Cartoonify Photo
+- **Endpoint:** `/photo/cartoon/{photo_id}`
+- **Method:** POST
+- **Description:** Applies a cartoon effect to the photo.
+- **Parameters:**
+  - `photo_id`: ID of the photo to transform.
+- **Response:** Returns URLs for the transformed and original photos.
+
+#### Grayscale Photo
+- **Endpoint:** `/photo/grayscale/{photo_id}`
+- **Method:** POST
+- **Description:** Converts the photo to grayscale.
+- **Parameters:**
+  - `photo_id`: ID of the photo to transform.
+- **Response:** Returns URLs for the transformed and original photos.
+
+#### Mask Photo
+- **Endpoint:** `/photo/face/{photo_id}`
+- **Method:** POST
+- **Description:** Applies a mask effect to the photo.
+- **Parameters:**
+  - `photo_id`: ID of the photo to transform.
+- **Response:** Returns URLs for the transformed and original photos.
+
+#### Tilt Photo
+- **Endpoint:** `/photo/tilt/{photo_id}`
+- **Method:** POST
+- **Description:** Tilts the photo with an outline effect.
+- **Parameters:**
+  - `photo_id`: ID of the photo to transform.
+- **Response:** Returns URLs for the transformed and original photos.
+
+## Project Structure
+
+- `main.py`: Main application file containing FastAPI routes.
+- `src/`: Directory containing application logic.
+  - `database/`: Directory with database configurations and models.
+  - `repository/`: Directory with repository classes for interacting with the database.
+  - `conf/`: Directory containing application configurations.
+  - `routes/`: Directory containing FastAPI router modules.
+- `pyproject.toml`: Poetry configuration file containing project dependencies.
