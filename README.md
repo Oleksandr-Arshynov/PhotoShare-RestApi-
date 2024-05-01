@@ -1,29 +1,44 @@
 # Photo Share
 
-This project is an API for a photo gallery with the ability to add comments. Users can upload their photos, view photos from other users, and leave comments on them.
+**This project is an API for a photo gallery with the ability to add comments. Users can upload their photos, view photos from other users, and leave comments on them.**
 
 ## Installation
 
 1. Clone the repository:
+    ```
     git clone https://github.com/Oleksandr-Arshynov/PhotoShare-RestApi-
+    ```
 
-2. Встановити залежності:
+2. Install dependencies:
+    ```
     poetry install
+    ```
 
-3. Зайти в директорію:
+3. Navigate to the directory:
+    ```
     cd src
+    ```
 
-4. Зробити міграцію:
+4. Perform migration:
+    ```
     alembic revision --autogenerate -m 'Init'
+    ```
 
-5. Застосувати зміни:
+5. Apply changes:
+    ```
     alembic upgrade head
+    ```
 
-6. Запустити контейнер:
+6. Run the container:
+    ```
     docker-compose up
+    ```
 
-7. Запустити сервер:
+7. Run the server:
+    ```
     python main.py
+    ```
+
 
 
 ## Usage
