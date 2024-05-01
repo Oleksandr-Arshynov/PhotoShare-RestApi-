@@ -35,32 +35,6 @@ cloudinary.config(
 )
 
 
-@router.put("/edit_photo_description/{user_id}/{photo_id}")
-async def edit_photo_description(
-    user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
-):
-    # Перевіряємо, чи існує фотографія з вказаним ID
-    photo = repository_photo.get_photo(user_id, photo_id, db)
-    if photo is None:
-        raise HTTPException(status_code=404, detail="Фотографія не знайдена")
-
-    # Оновлюємо опис фотографії в базі даних
-    photo = repository_photo.update_photo_description(photo_id, new_description, db)
-
-    # Оновлюємо опис фотографії в Cloudinary
-    try:
-        repository_photo.update_cloudinary_metadata(photo.public_id, new_description)
-    except Exception as e:
-        # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
-        repository_photo.rollback_photo_description(photo_id, db)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
-        )
-
-    return photo
-
-
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_upload_photo(
     request: Request,
@@ -113,6 +87,32 @@ async def get_photos(request: Request, db: Session = Depends(get_db)):
 async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
     user_id = 5  # Поки немає авторизації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
+    return photo
+
+
+@router.put("/edit_photo_description/{user_id}/{photo_id}")
+async def edit_photo_description(
+    user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
+):
+    # Перевіряємо, чи існує фотографія з вказаним ID
+    photo = repository_photo.get_photo(user_id, photo_id, db)
+    if photo is None:
+        raise HTTPException(status_code=404, detail="Фотографія не знайдена")
+
+    # Оновлюємо опис фотографії в базі даних
+    photo = repository_photo.update_photo_description(photo_id, new_description, db)
+
+    # Оновлюємо опис фотографії в Cloudinary
+    try:
+        repository_photo.update_cloudinary_metadata(photo.public_id, new_description)
+    except Exception as e:
+        # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
+        repository_photo.rollback_photo_description(photo_id, db)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
+        )
+
     return photo
 
 
