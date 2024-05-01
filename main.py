@@ -9,6 +9,7 @@ from src.routes import comment as router_comment
 from src.routes import admin as routes_admin
 from src.routes import moderator as routes_moderator
 from src.routes import user as routes_user
+from src.routes import transformation_photo as routes_transformation_photo
 
 app = FastAPI()
 
@@ -17,6 +18,7 @@ app.include_router(routes_admin.router, prefix="/api")
 app.include_router(routes_moderator.router, prefix="/api")
 app.include_router(routes_user.router, prefix="/api")
 app.include_router(router_photo.router, prefix="/api")
+app.include_router(routes_transformation_photo.router, prefix="/api")
 app.include_router(router_comment.router, prefix="/api")
 
 
