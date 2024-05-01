@@ -4,7 +4,8 @@ from src.repository import tags as repository_tag
 from sqlalchemy import and_
 from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
-
+import qrcode
+from starlette.responses import FileResponse
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -54,9 +55,8 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
     if post_photo: # перевіряє що photo знайдено вдало
-        if file:
+        if file.filename:
             contents = await file.read()
-            filename = file.filename
             cloudinary.uploader.destroy(post_photo.public_id)
             # Завантажуємо файл в Cloudinary
             response = cloudinary.uploader.upload(
@@ -145,6 +145,39 @@ async def get_photos(user_id: int, db: Session) -> Photo | HTTPException:
             status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found"
         )
     return photos
+
+
+async def create_qr(user_id: int, photo_id: int, db: Session):
+    photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
+    if photo:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(photo.photo)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="blue", back_color="white")
+        import os
+
+        # Перевірка, чи існує шлях до директорії
+        directory = os.path.dirname(f"src/static/users/{user_id}")
+        if not os.path.exists(directory):
+            await os.makedirs(directory)
+        filename = f"/{str(uuid.uuid4())}.png" 
+        # Збереження QR-коду з вставленим зображенням
+        qr_img.save(os.path.join(directory, filename))
+        return f"src/static/users/{user_id}" + filename
+        # return FileResponse(f"src/static/users/{user_id}" + filename, media_type='image') 
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
+
+
+
+
+
+
 
 
 
