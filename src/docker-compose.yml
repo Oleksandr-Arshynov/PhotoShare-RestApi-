@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: photo_share_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: qwerty123
+      POSTGRES_PASSWORD: 567234
     ports:
       - "5432:5432"
     # volumes:
