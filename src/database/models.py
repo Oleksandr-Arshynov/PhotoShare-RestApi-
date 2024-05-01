@@ -82,6 +82,8 @@ class Comment(Base):
     photo_id = Column(Integer, ForeignKey('photo.id'), nullable=False)  
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False) 
     comment = Column(String(255), nullable=False)
+    created_at = Column('created_at', DateTime, default=func.now(), nullable=True)
+    updated_at = Column('updated_at', DateTime, default=func.now(), onupdate=func.now(), nullable=True)
 
     photo = relationship("Photo", back_populates="comments") 
     user = relationship("User", back_populates="comments")
