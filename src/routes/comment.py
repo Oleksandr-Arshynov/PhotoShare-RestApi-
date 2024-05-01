@@ -49,22 +49,22 @@ async def update_comment(updated_comment: CommentUpdateSchema,comment_id: int, p
 
 
 
-@router.delete("/{comment_id}")
-def delete_comment(comment_id: int,user_id:int, photo_id: int, db: Session = Depends(get_db)):
+# @router.delete("/{comment_id}")
+# def delete_comment(comment_id: int,user_id:int, photo_id: int, db: Session = Depends(get_db)):
 
-    photo = db.query(Photo).filter(Photo.id == photo_id).first()
-    if not photo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=messages.PHOTO_NOT_FOUND
-        )
-    else:
-        comment = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id, Comment.user_id == user_id).first()
-        if not comment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=messages.COMMENT_NOT_FOUND
-            )
+#     photo = db.query(Photo).filter(Photo.id == photo_id).first()
+#     if not photo:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail=messages.PHOTO_NOT_FOUND
+#         )
+#     else:
+#         comment = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id, Comment.user_id == user_id).first()
+#         if not comment:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=messages.COMMENT_NOT_FOUND
+#             )
 
-        comment = delete_comment_rep(db,photo_id, comment_id)
-        return comment
+#         comment = delete_comment_rep(db,photo_id, comment_id)
+#         return comment

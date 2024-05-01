@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import Field
 from pydantic import BaseModel
 from typing import List, Optional
@@ -19,8 +20,8 @@ class CommentResponse(BaseModel):
     id: int
     user_id: int
     photo_id: int
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class CommentBase(BaseModel):
