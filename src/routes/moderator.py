@@ -1,53 +1,61 @@
-from fastapi import APIRouter, Depends, HTTPException
+from src.repository.comment import update_comment_rep
+from src.database.models import Photo, Comment
+from src.schemas.coment_schemas import (
+    CommentUpdateSchema,
+)
+from typing import List
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Request,
+)
 from sqlalchemy.orm import Session
 from src.database.db import get_db
-from src.auth.dependencies_auth import (
-    require_role,
-)
-from src.database.models import Photo, Comment
+from src.repository import photo as repository_photo
+from src.conf import messages
 
 
 router = APIRouter(prefix="/moderator", tags=["moderator"])
 
 
-# ----------МОДЕРАТОР----------
+@router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
+async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    user_id = 5  # Поки немає авторизації
+    photo = await repository_photo.delete_photo(user_id, photo_id, db)
+
+    return photo
 
 
-# Ендпоінт перегляду всіх коментарів
-@router.get("/comments", dependencies=[Depends(require_role(2))])
-def get_all_comments(db: Session = Depends(get_db)):
-    comments = db.query(Comment).all()
-    return comments
+@router.put("/{comment_id}")
+async def update_comment(
+    updated_comment: CommentUpdateSchema,
+    comment_id: int,
+    photo_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+):
 
-
-# Ендпоінт видалення окремого коментаря для модератора
-@router.delete("/delete-comment/{comment_id}", dependencies=[Depends(require_role(2))])
-def delete_comment(comment_id: int, db: Session = Depends(get_db)):
-    comment = db.query(Comment).filter(Comment.id == comment_id).first()
-    if not comment:
-        raise HTTPException(status_code=404, detail="Коментар не знайдено")
-
-    db.delete(comment)
-    db.commit()
-
-    return {"msg": "Коментар видалено"}
-
-
-# Ендпоінт перегляду всіх фото
-@router.get("/photos", dependencies=[Depends(require_role(2))])
-def get_all_photos(db: Session = Depends(get_db)):
-    photos = db.query(Photo).all()
-    return photos
-
-
-# Ендпоінт видалення окремого фото для модератора
-@router.delete("/delete-photo/{photo_id}", dependencies=[Depends(require_role(2))])
-def delete_photo(photo_id: int, db: Session = Depends(get_db)):
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
-        raise HTTPException(status_code=404, detail="Фото не знайдено")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
+        )
+    else:
+        comment = (
+            db.query(Comment)
+            .filter(
+                Comment.id == comment_id,
+                Comment.photo_id == photo_id,
+                Comment.user_id == user_id,
+            )
+            .first()
+        )
+        if not comment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+            )
 
-    db.delete(photo)
-    db.commit()
-
-    return {"msg": "Фото видалено"}
+        comment = update_comment_rep(db, comment_id, updated_comment)
+        return comment

@@ -3,9 +3,7 @@ from fastapi import FastAPI, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.database.models import User, Role
-from src.routes import photo as router_photo
 from src.routes import routes_auth
-from src.routes import comment as router_comment
 from src.routes import admin as routes_admin
 from src.routes import moderator as routes_moderator
 from src.routes import user as routes_user
@@ -17,9 +15,7 @@ app.include_router(routes_auth.router, prefix="/api")
 app.include_router(routes_admin.router, prefix="/api")
 app.include_router(routes_moderator.router, prefix="/api")
 app.include_router(routes_user.router, prefix="/api")
-app.include_router(router_photo.router, prefix="/api")
 app.include_router(routes_transformation_photo.router, prefix="/api")
-app.include_router(router_comment.router, prefix="/api")
 
 
 @app.get("/")

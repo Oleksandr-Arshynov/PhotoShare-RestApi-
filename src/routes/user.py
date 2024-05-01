@@ -1,131 +1,165 @@
-from fastapi import APIRouter, Depends, HTTPException
+from src.repository.comment import create_comment_rep, update_comment_rep
+from src.database.models import Photo, Comment
+from src.schemas.coment_schemas import (
+    CommentResponse,
+    CommentSchema,
+    CommentUpdateSchema,
+)
+from typing import List
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Request,
+    File,
+    UploadFile,
+    Form,
+)
 from sqlalchemy.orm import Session
-from datetime import timedelta
-from src.auth.dependencies_auth import get_current_user
-
 from src.database.db import get_db
+from src.repository import photo as repository_photo
+from src.repository import tags as repository_tags
 
-from src.database.models import User, Photo, Comment
-from src.schemas.coment_schemas import CommentUpdate
-from src.schemas.photo_schemas import PhotoUpdate
+from src.conf.config import settings
+import cloudinary.uploader
+from src.conf import messages
 
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-# ----------ЮЗЕР----------
+# Встановлюємо конфігурацію Cloudinary
+cloudinary.config(
+    cloud_name=settings.CLD_NAME,
+    api_key=settings.CLD_API_KEY,
+    api_secret=settings.CLD_API_SECRET,
+)
 
 
-# Ендпоінт перегляду всіх коментарів інших користувачів
-@router.get("/comments")
-def get_all_comments(db: Session = Depends(get_db)):
-    comments = db.query(Comment).all()
-    return comments
-
-
-# Ендпоінт перегляду всіх фото інших користувачів
-@router.get("/photos")
-def get_all_photos(db: Session = Depends(get_db)):
-    photos = db.query(Photo).all()
-    return photos
-
-
-# Видалення власного фото
-@router.delete("/delete-photo/{photo_id}")
-def delete_own_photo(
-    photo_id: int,
+@router.post("/{upload_photo}", status_code=status.HTTP_201_CREATED)
+async def create_upload_photo(
+    request: Request,
+    file: UploadFile = File(...),
+    description: str = Form(None),
+    tags: List[str] = Form(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    # Шукаємо фото за ID та перевіряємо, чи є власником поточний користувач
-    photo = (
-        db.query(Photo)
-        .filter(Photo.id == photo_id, Photo.owner_id == current_user.id)
-        .first()
+    user_id = 5  # Поки немає авторизації
+
+    tags = await repository_tags.editing_tags(tags)
+    photo = await repository_photo.create_photo(user_id, file, description, tags, db)
+    return photo
+
+
+@router.put("/{photo_id}", status_code=status.HTTP_200_OK)
+async def put_photo(
+    request: Request,
+    photo_id: int,
+    file: UploadFile = File(None),
+    description: str = Form(None),
+    tags: List[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+
+    user_id = 5  # Поки немає авторизації
+    tags = await repository_tags.editing_tags(tags)
+    photo = await repository_photo.put_photo(
+        user_id, photo_id, file, description, tags, db
     )
+    return photo
+
+
+@router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
+async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    user_id = 5  # Поки немає авторизації
+    photo = await repository_photo.delete_photo(user_id, photo_id, db)
+
+    return photo
+
+
+@router.get("", status_code=status.HTTP_200_OK)
+async def get_photos(request: Request, db: Session = Depends(get_db)):
+    user_id = 5  # Поки немає авторизації
+    photo = await repository_photo.get_photos(user_id, db)
+    return photo
+
+
+@router.get("/{photo_id}", status_code=status.HTTP_200_OK)
+async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    user_id = 5  # Поки немає авторизації
+    photo = await repository_photo.get_photo(user_id, photo_id, db)
+    return photo
+
+
+@router.put("/edit_photo_description/{user_id}/{photo_id}")
+async def edit_photo_description(
+    user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
+):
+    # Перевіряємо, чи існує фотографія з вказаним ID
+    photo = repository_photo.get_photo(user_id, photo_id, db)
+    if photo is None:
+        raise HTTPException(status_code=404, detail="Фотографія не знайдена")
+
+    # Оновлюємо опис фотографії в базі даних
+    photo = repository_photo.update_photo_description(photo_id, new_description, db)
+
+    # Оновлюємо опис фотографії в Cloudinary
+    try:
+        repository_photo.update_cloudinary_metadata(photo.public_id, new_description)
+    except Exception as e:
+        # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
+        repository_photo.rollback_photo_description(photo_id, db)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
+        )
+
+    return photo
+
+
+@router.post("/create_comment", response_model=CommentResponse)
+async def create_comment(
+    comment: CommentSchema, user_id: int, photo_id: int, db: Session = Depends(get_db)
+):
+
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(
-            status_code=404,
-            detail="Фото не знайдено або ви не маєте дозволу видалити це фото",
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
         )
-
-    db.delete(photo)
-    db.commit()
-
-    return {"msg": "Фото успішно видалено"}
+    else:
+        comment = create_comment_rep(db, user_id, photo_id, comment)
+        return comment
 
 
-# Видалення власного коментаря
-@router.delete("/delete-comment/{comment_id}")
-def delete_own_comment(
+@router.put("/{comment_id}")
+async def update_comment(
+    updated_comment: CommentUpdateSchema,
     comment_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    # Перевіряємо, чи існує коментар і чи належить він поточному користувачу
-    comment = (
-        db.query(Comment)
-        .filter(Comment.id == comment_id, Comment.owner_id == current_user.id)
-        .first()
-    )
-    if not comment:
-        raise HTTPException(
-            status_code=404,
-            detail="Коментар не знайдено або ви не маєте дозволу видалити цей коментар",
-        )
-
-    db.delete(comment)
-    db.commit()
-
-    return {"msg": "Коментар успішно видалено"}
-
-
-# Редагування власного коментаря
-@router.put("/update-comment/{comment_id}")
-def update_own_comment(
-    comment_id: int,
-    comment_update: CommentUpdate,  # Коментар, що містить новий текст
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    comment = (
-        db.query(Comment)
-        .filter(Comment.id == comment_id, Comment.owner_id == current_user.id)
-        .first()
-    )
-    if not comment:
-        raise HTTPException(
-            status_code=404,
-            detail="Коментар не знайдено або ви не маєте права його редагувати",
-        )
-
-    comment.text = comment_update.text
-    db.commit()
-
-    return {"msg": "Коментар успішно оновлено"}
-
-
-# Редагування власного фото
-@router.put("/update-photo/{photo_id}")
-def update_own_photo(
     photo_id: int,
-    photo_update: PhotoUpdate,  # Об'єкт із новим описом або іншими метаданими
+    user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    photo = (
-        db.query(Photo)
-        .filter(Photo.id == photo_id, Photo.owner_id == current_user.id)
-        .first()
-    )
+
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(
-            status_code=404,
-            detail="Фото не знайдено або ви не маєте права його редагувати",
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
         )
+    else:
+        comment = (
+            db.query(Comment)
+            .filter(
+                Comment.id == comment_id,
+                Comment.photo_id == photo_id,
+                Comment.user_id == user_id,
+            )
+            .first()
+        )
+        if not comment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+            )
 
-    if photo_update.description:
-        photo.description = photo_update.description
-
-    db.commit()
-
-    return {"msg": "Фото успішно оновлено"}
+        comment = update_comment_rep(db, comment_id, updated_comment)
+        return comment

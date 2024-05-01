@@ -82,7 +82,7 @@ async def transformation_photo_grayscale(
     }
 
 
-@router.post("/mask/{photo_id}", status_code=status.HTTP_200_OK)
+@router.post("/face/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_face(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
