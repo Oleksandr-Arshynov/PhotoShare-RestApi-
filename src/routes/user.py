@@ -35,6 +35,7 @@ cloudinary.config(
     api_secret=settings.CLD_API_SECRET,
 )
 
+USER_ID = 1
 
 @router.post("/{upload_photo}", status_code=status.HTTP_201_CREATED)
 async def create_upload_photo(
@@ -44,7 +45,7 @@ async def create_upload_photo(
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
 ):
-    user_id = 5  # Поки немає авторизації
+    user_id = USER_ID  # Поки немає авторизації
 
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.create_photo(user_id, file, description, tags, db)
@@ -61,7 +62,7 @@ async def put_photo(
     db: Session = Depends(get_db),
 ):
 
-    user_id = 5  # Поки немає авторизації
+    user_id = USER_ID   # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.put_photo(
         user_id, photo_id, file, description, tags, db
@@ -71,7 +72,7 @@ async def put_photo(
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
-    user_id = 5  # Поки немає авторизації
+    user_id = USER_ID   # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
 
     return photo
@@ -79,14 +80,14 @@ async def delete_photo(request: Request, photo_id: int, db: Session = Depends(ge
 
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_photos(request: Request, db: Session = Depends(get_db)):
-    user_id = 5  # Поки немає авторизації
+    user_id = USER_ID  # Поки немає авторизації
     photo = await repository_photo.get_photos(user_id, db)
     return photo
 
 
 @router.get("/{photo_id}", status_code=status.HTTP_200_OK)
 async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
-    user_id = 5  # Поки немає авторизації
+    user_id = USER_ID   # Поки немає авторизації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
     return photo
 

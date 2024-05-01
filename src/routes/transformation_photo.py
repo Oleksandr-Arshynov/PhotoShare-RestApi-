@@ -2,13 +2,16 @@ from fastapi import (
     APIRouter,
     Depends,
     Request,
-    status
+    status,
+    HTTPException
 )
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
-
-
+from src.database.models import Photo
+import qrcode
+from starlette.responses import FileResponse
 from src.conf.config import settings
 import cloudinary.uploader
 
@@ -23,12 +26,13 @@ cloudinary.config(
     api_secret=settings.CLD_API_SECRET,
 )
 
+USER_ID = 1
 
 @router.post("/cartoon/{photo_id}", status_code=status.HTTP_200_OK)
 async def cartoon_transformation_photo(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
-    user_id = 5  # Тимчасово, доки немає автентифікації
+    user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -58,7 +62,7 @@ async def cartoon_transformation_photo(
 async def transformation_photo_grayscale(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
-    user_id = 5  # Тимчасово, доки немає автентифікації
+    user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -86,7 +90,7 @@ async def transformation_photo_grayscale(
 async def transformation_photo_face(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
-    user_id = 5  # Тимчасово, доки немає автентифікації
+    user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -119,7 +123,7 @@ async def transformation_photo_face(
 async def transformation_photo_tilt(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
-    user_id = 5  # Тимчасово, доки немає автентифікації
+    user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -148,3 +152,26 @@ async def transformation_photo_tilt(
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
     }
+
+
+@router.get("/qr_code/{photo_id}", status_code=status.HTTP_200_OK)
+async def create_qr(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    user_id = USER_ID
+    photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
+    if photo:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(photo.photo)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="blue", back_color="white")
+        
+        # Збереження QR-коду з вставленим зображенням
+        qr_img.save("src/service/qr_code.png")
+        return FileResponse("src/service/qr_code.png", media_type='image') 
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
+
