@@ -1,0 +1,24 @@
+{% extends 'quotes/base.html' %}
+{% load extract %}
+
+{% block content %}
+<h1> Create Tag </h1>
+
+<form method="post" action="{% url 'quotes:create_tag' %}">
+    {% csrf_token %}
+    <div style="padding: 10px;">
+        <div class="col-md-4">
+            <label class="form-group">Name tag:</label>
+            {{ form.name }}
+        </div>
+
+        <span>{{ form.errors.tag }}</span>
+    </div>
+    <div class="col-md-4">
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="reset" class="btn btn-primary">Reset</button>
+    </div>
+</form>
+
+
+{% endblock %}

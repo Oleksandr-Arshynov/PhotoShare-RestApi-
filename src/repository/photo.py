@@ -48,26 +48,10 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
     return photo 
 
 
-
 async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Tag:
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
     if post_photo: # перевіряє що photo знайдено вдало
-        contents = await file.read()
-        filename = file.filename
-        cloudinary.uploader.destroy(post_photo.public_id)
-        # Завантажуємо файл в Cloudinary
-        response = cloudinary.uploader.upload(
-            contents,
-            folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-            public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
-            description=description,
-            tags=tags
-        )
-        # Отримуємо URL завантаженого фото з відповіді Cloudinary
-        post_photo.photo = response["secure_url"]
-        post_photo.public_id = response["public_id"]
-
         if description: # перевіряє що description не пусте 
             post_photo.description = description
 
@@ -84,9 +68,23 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
                 post_photo.tags[num].name
 
         post_photo.updated_at = datetime.now() # дата редагування
-
+        if file.filename != "":
+            contents = await file.read()
+            cloudinary.uploader.destroy(post_photo.public_id)
+            # Завантажуємо файл в Cloudinary
+            response = cloudinary.uploader.upload(
+                contents,
+                folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
+                public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
+                description=post_photo.description,
+                tags=tags
+            )
+            print(response)
+            # Отримуємо URL завантаженого фото з відповіді Cloudinary
+            post_photo.photo = response["secure_url"]
+            post_photo.public_id = response["public_id"]
+            db.commit()
     return post_photo
-
 
 
 async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
@@ -106,7 +104,6 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
     else: # якщо photo не знайдено викликає помилку 404
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
     
-
 
 async def get_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
     photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()

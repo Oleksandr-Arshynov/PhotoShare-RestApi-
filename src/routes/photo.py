@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, status, Request, File, UploadFile, Form
+from fastapi import APIRouter, Depends, status, Request, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from src.database.db import get_db
@@ -28,30 +28,29 @@ async def create_upload_photo(
     user_id = 1  # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.create_photo(user_id, file, description, tags, db)
-    return photo
-
+    response = RedirectResponse(url="http://localhost:8000/", status_code=302)
+    return response
 
 
 @router.put("/{photo_id}", status_code=status.HTTP_200_OK)
 async def put_photo(
     request: Request,
     photo_id: int,
-    file: UploadFile = File(...),
+    file: UploadFile = File(None),
     description: str = Form(None),
     tags: List[str] = Form(None),
     db: Session = Depends(get_db)):
-
     user_id = 1  # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.put_photo(user_id, photo_id, file, description, tags, db)
-    return photo
+    
 
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    print(photo_id)
     user_id = 1  # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
-
     return photo
 
 
@@ -80,25 +79,20 @@ cloudinary.config(
 async def create_qr(request: Request, photo_id: int, db: Session = Depends(get_db)):
     user_id = 1
     photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(photo.photo)
-    qr.make(fit=True)
-    qr_img = qr.make_image(fill_color="blue", back_color="white")
-    
-    # Збереження QR-коду з вставленим зображенням
-    qr_img.save("src/service/qr_code.png")
-    return FileResponse("src/service/qr_code.png", media_type='image') 
+    if photo:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(photo.photo)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="blue", back_color="white")
+        
+        # Збереження QR-коду з вставленим зображенням
+        qr_img.save("src/service/qr_code.png")
+        return FileResponse("src/service/qr_code.png", media_type='image') 
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
 
-
-# @router.post("/redirect")
-# async def redirect():
-#     # Це посилання, на яке ви хочете перенаправити користувача
-#     new_url = "http://localhost:8000/api/photo/qr_code/16"
-#     # Використовуйте RedirectResponse для здійснення редиректу
-#     response = RedirectResponse(url=new_url, status_code=302)
-#     return response

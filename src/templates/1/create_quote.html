@@ -1,0 +1,42 @@
+{% extends 'quotes/base.html' %}
+{% load extract %}
+
+{% block content %}
+<h1> Create Quote </h1>
+
+<form method="post" action="{% url 'quotes:create_quote' %}">
+    {% csrf_token %}
+    <div style="padding: 10px;">
+        <div class="col-md-4">
+            <label class="form-group">Author:</label>
+            {{ form.author }}
+        </div>
+        <span>{{ form.errors.author }}</span>
+
+        <div class="col-md-4">
+            <label class="form-group">Author quote:</label>
+            {{ form.quote }}
+        </div>
+        <span>{{ form.errors.quote }}</span>
+        
+        <div class="col-md-4">
+            <label class="form-group">Open this select menu tags:</label>
+            {{form.tags}}
+            <span>{{ form.errors.tags }}</span>
+        </div>  
+        
+        <div class="col-md-4">
+            <label class="form-group">Author goodreads:</label>
+            {{ form.goodreads_page }}
+        </div>
+        <span>{{ form.errors.goodreads_page }}</span>
+
+    </div>
+    <div class="col-md-4">
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="reset" class="btn btn-primary">Reset</button>
+    </div>
+</form>
+
+
+{% endblock %}

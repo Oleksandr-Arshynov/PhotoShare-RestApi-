@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .container {
+        width: 50%;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    input[type="file"],
+    input[type="text"],
+    textarea {
+        margin-bottom: 10px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    button[type="submit"] {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+        background-color: #45a049;
+    }
+
+</style>
+
+<div class="container">
+    <h1>редагувати вашу світлину</h1>
+    <a>{{ photo_id }}</a>
+    <form id="editForm">
+        <label for="file">Виберіть файл для завантаження:</label>
+        <input type="file" id="file" name="file">
+        <label for="description">Опис:</label>
+        <textarea id="description" name="description" placeholder="Введіть опис файлу"></textarea>
+        <label for="tags">Теги (до 5 штук унікальних та розділених комами):</label>
+        <input type="text" id="tags" name="tags" placeholder="Теги">
+        <button type="button" onclick="editPhoto()">Змінити</button>
+    </form>
+</div>
+
+<script>
+    function editPhoto() {
+        var form = document.getElementById('editForm');
+        var formData = new FormData(form);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('PUT', 'http://localhost:8000/api/photo/{{ photo_id }}', true);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                // Обробляємо успішну відповідь
+                console.log('Success:', xhr.responseText);
+                // Редірект на іншу сторінку після успішного оновлення
+                window.location.href = 'http://localhost:8000/';
+            } else {
+                // Обробляємо помилку
+                console.error('Error:', xhr.statusText);
+            }
+        };
+        xhr.onerror = function () {
+            // Обробляємо помилку
+            console.error('Error:', xhr.statusText);
+        };
+        xhr.send(formData);
+    }
+</script>
+
+
+{% endblock %}

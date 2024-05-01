@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .tag-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 3px;
+    }
+
+    .tag {
+        margin-right: 10px; /* Додатковий відступ між тегами */
+        display: inline-block;
+        padding: 1px 10px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        margin-right: 10px;
+        border: 2px solid #333;
+    }
+
+    .photo img {
+        width: 100%; /* Заповнює контейнер */
+        height: auto; /* Автоматична висота для збереження пропорцій */
+    }
+
+    .photo {
+        margin-top: 10px;
+    }
+
+    .button {
+        display: inline-block;
+        padding: 3px 10px;
+        background-color: #f0f0f0;
+        border-radius: 15px;
+        border: 2px solid #333;
+    }
+    .user {
+        margin-top: 10px;
+        display: inline-block;
+        padding: 3px 10px;
+        background-color: #f0f0f0;
+        border-radius: 15px;
+        border: 2px solid #333;
+        margin-bottom: 20px
+    }
+
+    .photo-gallery {
+        margin-top: 10px;
+        width: 70%; /* Заповнює контейнер */
+        display: inline-block;
+        padding: 3px 10px;
+        background-color: #f0f0f0;
+        border-radius: 1;
+        border: 2px solid #333;
+        margin-bottom: 20px;
+    }
+</style>
+
+<body>
+    <h1>Photo Gallery</h1>
+        {% for photo in photos_all %}
+            <div class="photo-gallery">
+            {% for user in users %}
+                {% if user.id == photo.user_id %}
+                    <div class="user" style="display: flex; justify-content: space-between;">
+                        <div>
+                            <img src="{{ user.avatar }}" alt="Avatar" width="25" height="25">
+                            <a href="http://localhost:8000/">{{ user.username }}</a>
+                        </div>
+                        <div>
+                            <a href="http://localhost:8000/change_photo/{{ photo.id }}">Change</a>
+                            <a href="http://localhost:8000/delete_photo/{{ photo.id }}">Delete</a>
+                        </div>
+                    </div>
+                    <div class="photo">
+                        <img src="{{ photo.photo }}" alt="{{ photo.description }}" width="600" height="300">
+                    </div>
+                    {% if photo.description is not none %}
+                    <p>{{ photo.description }}</p>
+                    {% endif %}
+                    <div class="tag-container">
+                        {% for tag in photo.tags %}
+                        <p class="tag">{{ tag.name }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            </div>
+        {% endfor %}
+    
+</body>
+
+
+{% endblock %}
