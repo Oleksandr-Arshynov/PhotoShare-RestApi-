@@ -24,7 +24,7 @@ cloudinary.config(
     api_secret=settings.CLD_API_SECRET,
 )
 
-USER_ID = 1
+USER_ID = 5
 
 @router.post("/cartoon/{photo_id}", status_code=status.HTTP_200_OK)
 async def cartoon_transformation_photo(
@@ -53,10 +53,10 @@ async def cartoon_transformation_photo(
     if filename != "":
         if photo.qr_url_cartoon:
             result = await repository_photo.delete_qr_code(filename=photo.qr_url_cartoon, user_id=user_id, photo_id=photo_id)
-        if result:
-            photo.qr_url_cartoon = filename
-            photo.updated_at = datetime.now() # дата редагування
-            db.commit()
+            if result:
+                photo.qr_url_cartoon = filename
+                photo.updated_at = datetime.now() # дата редагування
+                db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
@@ -91,10 +91,10 @@ async def transformation_photo_grayscale(
     if filename != "":
         if photo.qr_url_grayscale:
             result = await repository_photo.delete_qr_code(filename=photo.qr_url_grayscale, user_id=user_id, photo_id=photo_id)
-        if result:
-            photo.qr_url_grayscale = filename
-            photo.updated_at = datetime.now() # дата редагування
-            db.commit()
+            if result:
+                photo.qr_url_grayscale = filename
+                photo.updated_at = datetime.now() # дата редагування
+                db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
@@ -134,10 +134,10 @@ async def transformation_photo_face(
     if filename != "":
         if photo.qr_url_mask:
             result = await repository_photo.delete_qr_code(filename=photo.qr_url_mask, user_id=user_id, photo_id=photo_id)
-        if result:
-            photo.qr_url_mask = filename
-            photo.updated_at = datetime.now() # дата редагування
-            db.commit()
+            if result:
+                photo.qr_url_mask = filename
+                photo.updated_at = datetime.now() # дата редагування
+                db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
@@ -179,10 +179,10 @@ async def transformation_photo_tilt(
     if filename != "":
         if photo.qr_url_tilt:
             result = await repository_photo.delete_qr_code(filename=photo.qr_url_tilt, user_id=user_id, photo_id=photo_id)
-        if result:
-            photo.qr_url_tilt = filename
-            photo.updated_at = datetime.now() # дата редагування
-            db.commit()
+            if result:
+                photo.qr_url_tilt = filename
+                photo.updated_at = datetime.now() # дата редагування
+                db.commit()
             
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
