@@ -56,7 +56,7 @@ async def static(request: Request, db: Session = Depends(get_db)):
             username="User",
             email="User@gmail.com",
             hashed_password=routes_auth.get_password_hash("qwerty"),
-            avatar="https://img.pixers.pics/pho_wat(s3:700/FO/33/04/37/38/700_FO33043738_f6c745438728a9e2cd116e7c28a15ffa.jpg,700,700,cms:2018/10/5bd1b6b8d04b8_220x50-watermark.png,over,480,650,jpg)/stickers-fire-font-letter-u.jpg.jpg",
+            avatar="https://static6.depositphotos.com/1001599/647/i/450/depositphotos_6477379-stock-photo-fire-letters-a-z.jpg",
             confirmed=True,
             role=db.query(Role).filter(Role.role=="User").first(),
         )
