@@ -37,8 +37,8 @@ cloudinary.config(
 
 USER_ID = 1
 
-@router.post("/{upload_photo}", status_code=status.HTTP_201_CREATED)
-async def create_upload_photo(
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def create_photo(
     request: Request,
     file: UploadFile = File(...),
     description: str = Form(None),
@@ -74,7 +74,7 @@ async def put_photo(
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
     user_id = USER_ID   # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
-
+    
     return photo
 
 
@@ -90,6 +90,9 @@ async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_d
     user_id = USER_ID   # Поки немає авторизації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
     return photo
+
+
+
 
 
 @router.put("/edit_photo_description/{user_id}/{photo_id}")

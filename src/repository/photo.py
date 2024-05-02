@@ -1,23 +1,28 @@
+import os
+import uuid
+import qrcode
+import shutil
+import cloudinary.uploader
 from typing import List
-from src.database.models import Tag, Photo, PhotoTagAssociation
-from src.repository import tags as repository_tag
 from sqlalchemy import and_
 from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
-import qrcode
-from starlette.responses import FileResponse
-
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+# from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.conf.config import settings
-import cloudinary.uploader
-import uuid
+from src.repository import tags as repository_tag
+from src.database.models import Tag, Photo, PhotoTagAssociation
+
+
+
 
 
 # Встановлюємо конфігурацію Cloudinary
 cloudinary.config(
     cloud_name=settings.CLD_NAME, api_key=settings.CLD_API_KEY, api_secret=settings.CLD_API_SECRET
 )
+
 
 
 async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
@@ -51,25 +56,11 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
     return photo 
 
 
+
 async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Tag:
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
     if post_photo: # перевіряє що photo знайдено вдало
-        if file.filename:
-            contents = await file.read()
-            cloudinary.uploader.destroy(post_photo.public_id)
-            # Завантажуємо файл в Cloudinary
-            response = cloudinary.uploader.upload(
-                contents,
-                folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
-                public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
-                context = f"alt={description}",
-                tags=tags
-            )
-            # Отримуємо URL завантаженого фото з відповіді Cloudinary
-            post_photo.photo = response["secure_url"]
-            post_photo.public_id = response["public_id"]
-
         if description: # перевіряє що description не пусте 
             post_photo.description = description
 
@@ -85,9 +76,28 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
 
+        if file.filename:
+            contents = await file.read()
+            # Видаляємо файл в Cloudinary
+            cloudinary.uploader.destroy(post_photo.public_id)
+            # Завантажуємо файл в Cloudinary
+            response = cloudinary.uploader.upload(
+                contents,
+                folder=f"uploads/{user_id}",  # Папка, куди буде завантажено фото
+                public_id=str(uuid.uuid4()),  # Ім'я файлу на Cloudinary
+                context = f"alt={description}",
+                tags=tags
+            )
+            # Отримуємо URL завантаженого фото з відповіді Cloudinary
+            post_photo.photo = response["secure_url"]
+            post_photo.public_id = response["public_id"]
+
+            shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+
         post_photo.updated_at = datetime.now() # дата редагування
 
     return post_photo
+
 
 
 async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
@@ -95,6 +105,7 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
 
     if photo: # перевіряє що photo знайдено вдало
         cloudinary.uploader.destroy(photo.public_id)
+        shutil.rmtree(f"src/static/users/{user_id}/{photo_id}")
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
         db.delete(photo) 
         db.commit()
@@ -106,6 +117,7 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
     
     else: # якщо photo не знайдено викликає помилку 404
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
+
 
 
 async def get_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTPException:
@@ -147,35 +159,41 @@ async def get_photos(user_id: int, db: Session) -> Photo | HTTPException:
     return photos
 
 
-async def create_qr(user_id: int, photo_id: int, db: Session):
-    photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
-    if photo:
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(photo.photo)
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="blue", back_color="white")
-        import os
+# new
+async def create_qr_code(url: str, user_id: int, photo_id: int) -> str:
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="blue", back_color="white") 
+    
+    # Перевірка, чи існує шлях до директорії
+    if not os.path.exists(f"src/static/users/{user_id}/{photo_id}"):
+        os.makedirs(f"src/static/users/{user_id}/{photo_id}")
+    filename = f"{str(uuid.uuid4())}.png" 
 
-        # Перевірка, чи існує шлях до директорії
-        directory = os.path.dirname(f"src/static/users/{user_id}")
-        if not os.path.exists(directory):
-            await os.makedirs(directory)
-        filename = f"/{str(uuid.uuid4())}.png" 
-        # Збереження QR-коду з вставленим зображенням
-        qr_img.save(os.path.join(directory, filename))
-        return f"src/static/users/{user_id}" + filename
-        # return FileResponse(f"src/static/users/{user_id}" + filename, media_type='image') 
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
+    # Збереження QR-коду з вставленим зображенням
+    qr_img.save(f"src/static/users/{user_id}/{photo_id}/" + filename)
+    return filename
 
 
-
-
+# new
+async def delete_qr_code(filename: str, user_id: int, photo_id: int):
+    file_path = f"src/static/users/{user_id}/{photo_id}/" + filename 
+    try:
+        os.remove(file_path)
+        print(f"Файл {file_path} успішно видалено.")
+        return True
+    except FileNotFoundError:
+        print(f"Файл {file_path} не знайдено.")
+        return False
+    except Exception as e:
+        print(f"Виникла помилка при видаленні файлу: {e}")
+        return False
 
 
 

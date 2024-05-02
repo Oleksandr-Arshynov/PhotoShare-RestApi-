@@ -28,8 +28,10 @@ class UserBase(BaseModel):
     refresh_token: Optional[str] = None
 
 
-class UserCreate(UserBase):
-    pass
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
 
 
 class User(UserBase):

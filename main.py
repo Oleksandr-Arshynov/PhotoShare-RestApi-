@@ -1,6 +1,7 @@
 import uvicorn
-from fastapi import FastAPI, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+
 from src.database.db import get_db
 from src.database.models import User, Role
 from src.routes import routes_auth
@@ -18,41 +19,55 @@ app.include_router(routes_user.router, prefix="/api")
 app.include_router(routes_transformation_photo.router, prefix="/api")
 
 
-@app.get("/")
-async def home(request: Request, db: Session = Depends(get_db)):
-    # create role
-    roles = ["Admin", "Moderator", "User"]
-    for role_name in roles:
-        existing_role = db.query(Role).filter(Role.role == role_name).first()
-        if not existing_role:
-            db.add(Role(role=role_name))
-    db.commit()
-
-    # create Admin
-    admin_role = db.query(Role).filter(Role.role == "Admin").first()
-    if not admin_role:
-        admin_role = Role(role="Admin")
-        db.add(admin_role)
+@app.get("/", status_code=status.HTTP_200_OK)
+async def static(request: Request, db: Session = Depends(get_db)):
+    try:
+        # create role
+        roles = ["Admin", "Moderator", "User"]
+        for role_name in roles:
+            existing_role = db.query(Role).filter(Role.role == role_name).first()
+            if not existing_role:
+                db.add(Role(role=role_name))
         db.commit()
 
-    # Check if Admin user already exists
-    existing_admin = db.query(User).filter(User.email == "Admin@gmail.com").first()
-    if existing_admin:
-        raise HTTPException(status_code=400, detail="Admin user already exists.")
+        admin = User(
+            username="Admin",
+            email="Admin@gmail.com",
+            hashed_password=routes_auth.get_password_hash("qwerty"),
+            avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0cFYTSmgeLGCEAApBVBVkVcxe2COuA2sYja0IUfwe0w&s",
+            confirmed=True,
+            role=db.query(Role).filter(Role.role=="Admin").first(),
+        )
+        db.add(admin)
+        db.commit()
 
-    user = User(
-        username="Admin",
-        email="Admin@gmail.com",
-        hashed_password="qwerty",
-        avatar="avatar",
-        confirmed=True,
-        role=admin_role,
-    )
-    db.add(user)
-    db.commit()
+        moderator = User(
+            username="Moderator",
+            email="Moderator@gmail.com",
+            hashed_password=routes_auth.get_password_hash("qwerty"),
+            avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfhs8u11hfQyBqgGQSp_lWzoHkcSIjm6KGDC0gg567yg&s",
+            confirmed=True,
+            role=db.query(Role).filter(Role.role=="Moderator").first(),
+        )
+        db.add(moderator)
+        db.commit()
 
-    return "OK"
+        user = User(
+            username="User",
+            email="User@gmail.com",
+            hashed_password=routes_auth.get_password_hash("qwerty"),
+            avatar="https://static6.depositphotos.com/1001599/647/i/450/depositphotos_6477379-stock-photo-fire-letters-a-z.jpg",
+            confirmed=True,
+            role=db.query(Role).filter(Role.role=="User").first(),
+        )
+        db.add(user)
+        db.commit()
+        return "OK"  
+    except Exception as _:
+        return "Exception"
+
+    
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000) # , reload=True
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) # , reload=True
