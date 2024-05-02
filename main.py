@@ -21,8 +21,8 @@ app.include_router(routes_transformation_photo.router, prefix="/api")
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def static(request: Request, db: Session = Depends(get_db)):
-    # create role
     try:
+        # create role
         roles = ["Admin", "Moderator", "User"]
         for role_name in roles:
             existing_role = db.query(Role).filter(Role.role == role_name).first()
