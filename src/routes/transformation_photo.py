@@ -1,4 +1,5 @@
 import cloudinary.uploader
+from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import (
     APIRouter,
@@ -47,15 +48,21 @@ async def cartoon_transformation_photo(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
+
     filename = await repository_photo.create_qr_code(url=photo.transformation_url_cartoon, user_id=user_id, photo_id=photo_id)
     if filename != "":
-        photo.qr_url_cartoon = filename
-        db.commit()
+        if photo.qr_url_cartoon:
+            result = await repository_photo.delete_qr_code(filename=photo.qr_url_cartoon, user_id=user_id, photo_id=photo_id)
+        if result:
+            photo.qr_url_cartoon = filename
+            photo.updated_at = datetime.now() # дата редагування
+            db.commit()
+
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
-        "filename": filename,
+        "filename": photo.qr_url_cartoon,
     }
 
 
@@ -79,15 +86,21 @@ async def transformation_photo_grayscale(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
+
     filename = await repository_photo.create_qr_code(url=photo.transformation_url_grayscale, user_id=user_id, photo_id=photo_id)
     if filename != "":
-        photo.qr_url_grayscale = filename
-        db.commit()
+        if photo.qr_url_grayscale:
+            result = await repository_photo.delete_qr_code(filename=photo.qr_url_grayscale, user_id=user_id, photo_id=photo_id)
+        if result:
+            photo.qr_url_grayscale = filename
+            photo.updated_at = datetime.now() # дата редагування
+            db.commit()
+
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
-        "filename": filename,
+        "filename": photo.qr_url_grayscale,
     }
 
 
@@ -116,15 +129,21 @@ async def transformation_photo_face(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
+
     filename = await repository_photo.create_qr_code(url=photo.transformation_url_mask, user_id=user_id, photo_id=photo_id)
     if filename != "":
-        photo.qr_url_mask = filename
-        db.commit()
+        if photo.qr_url_mask:
+            result = await repository_photo.delete_qr_code(filename=photo.qr_url_mask, user_id=user_id, photo_id=photo_id)
+        if result:
+            photo.qr_url_mask = filename
+            photo.updated_at = datetime.now() # дата редагування
+            db.commit()
+
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
-        "filename": filename,
+        "filename": photo.qr_url_mask,
     }
 
 
@@ -155,13 +174,19 @@ async def transformation_photo_tilt(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
+
     filename = await repository_photo.create_qr_code(url=photo.transformation_url_tilt, user_id=user_id, photo_id=photo_id)
     if filename != "":
-        photo.qr_url_tilt = filename
-        db.commit()
+        if photo.qr_url_tilt:
+            result = await repository_photo.delete_qr_code(filename=photo.qr_url_tilt, user_id=user_id, photo_id=photo_id)
+        if result:
+            photo.qr_url_tilt = filename
+            photo.updated_at = datetime.now() # дата редагування
+            db.commit()
+            
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
-        "filename": filename,
+        "filename": photo.qr_url_tilt,
     }
