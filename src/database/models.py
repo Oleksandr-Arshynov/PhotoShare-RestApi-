@@ -64,6 +64,10 @@ class Photo(Base):
     transformation_url_grayscale = Column(String)
     transformation_url_mask = Column(String)
     transformation_url_tilt = Column(String)
+    qr_url_cartoon = Column(String)
+    qr_url_grayscale = Column(String)
+    qr_url_mask = Column(String)
+    qr_url_tilt = Column(String)
     
     comments = relationship("Comment", back_populates="photo")
     user = relationship("User", back_populates="photo")  

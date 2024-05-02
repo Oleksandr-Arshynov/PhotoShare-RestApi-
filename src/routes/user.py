@@ -74,7 +74,7 @@ async def put_photo(
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
     user_id = USER_ID   # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
-
+    
     return photo
 
 

@@ -1,16 +1,21 @@
+import os
+import uuid
+import qrcode
+import shutil
+import cloudinary.uploader
 from typing import List
-from src.database.models import Tag, Photo, PhotoTagAssociation
-from src.repository import tags as repository_tag
 from sqlalchemy import and_
 from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
-
-
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+# from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.conf.config import settings
-import cloudinary.uploader
-import uuid
+from src.repository import tags as repository_tag
+from src.database.models import Tag, Photo, PhotoTagAssociation
+
+
+
 
 
 # Встановлюємо конфігурацію Cloudinary
@@ -54,9 +59,8 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
     post_photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
     if post_photo: # перевіряє що photo знайдено вдало
-        if file:
+        if file.filename:
             contents = await file.read()
-            filename = file.filename
             cloudinary.uploader.destroy(post_photo.public_id)
             # Завантажуємо файл в Cloudinary
             response = cloudinary.uploader.upload(
@@ -95,6 +99,8 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
 
     if photo: # перевіряє що photo знайдено вдало
         cloudinary.uploader.destroy(photo.public_id)
+        result = shutil.rmtree(f"src/static/users/{user_id}/{photo_id}")
+        print(result)
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
         db.delete(photo) 
         db.commit()
@@ -145,6 +151,27 @@ async def get_photos(user_id: int, db: Session) -> Photo | HTTPException:
             status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found"
         )
     return photos
+
+# new
+async def create_qr_code(url: str, user_id: int, photo_id: int) -> str:
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="blue", back_color="white") 
+    
+    # Перевірка, чи існує шлях до директорії
+    if not os.path.exists(f"src/static/users/{user_id}/{photo_id}"):
+        os.makedirs(f"src/static/users/{user_id}/{photo_id}")
+    filename = f"{str(uuid.uuid4())}.png" 
+
+    # Збереження QR-коду з вставленим зображенням
+    qr_img.save(f"src/static/users/{user_id}/{photo_id}/" + filename)
+    return filename
 
 
 

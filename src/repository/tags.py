@@ -50,6 +50,6 @@ async def editing_tags(tags: list) -> list:
 
         new_list = []
         for num in range(0, count_tag): # Повертаємо лише перші 5 тегів
-            new_list.append(unique_list[num])
+            new_list.append(unique_list[num].strip())
         return new_list
     return []

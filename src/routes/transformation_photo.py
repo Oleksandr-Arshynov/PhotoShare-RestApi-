@@ -1,19 +1,16 @@
+import cloudinary.uploader
+from sqlalchemy.orm import Session
 from fastapi import (
     APIRouter,
     Depends,
     Request,
-    status,
-    HTTPException
+    status
 )
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
+
 from src.database.db import get_db
 from src.repository import photo as repository_photo
-from src.database.models import Photo
-import qrcode
-from starlette.responses import FileResponse
 from src.conf.config import settings
-import cloudinary.uploader
+
 
 
 router = APIRouter(prefix="/transformation_photo", tags=["transformation_photo"])
@@ -50,11 +47,15 @@ async def cartoon_transformation_photo(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
-
+    filename = await repository_photo.create_qr_code(url=photo.transformation_url_cartoon, user_id=user_id, photo_id=photo_id)
+    if filename != "":
+        photo.qr_url_cartoon = filename
+        db.commit()
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
+        "filename": filename,
     }
 
 
@@ -78,11 +79,15 @@ async def transformation_photo_grayscale(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
-
+    filename = await repository_photo.create_qr_code(url=photo.transformation_url_grayscale, user_id=user_id, photo_id=photo_id)
+    if filename != "":
+        photo.qr_url_grayscale = filename
+        db.commit()
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
+        "filename": filename,
     }
 
 
@@ -111,11 +116,15 @@ async def transformation_photo_face(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
-
+    filename = await repository_photo.create_qr_code(url=photo.transformation_url_mask, user_id=user_id, photo_id=photo_id)
+    if filename != "":
+        photo.qr_url_mask = filename
+        db.commit()
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
+        "filename": filename,
     }
 
 
@@ -146,32 +155,13 @@ async def transformation_photo_tilt(
     photo.photo = original_image["secure_url"]
     db.add(photo)
     db.commit()
-
+    filename = await repository_photo.create_qr_code(url=photo.transformation_url_tilt, user_id=user_id, photo_id=photo_id)
+    if filename != "":
+        photo.qr_url_tilt = filename
+        db.commit()
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
+        "filename": filename,
     }
-
-
-@router.get("/qr_code/{photo_id}", status_code=status.HTTP_200_OK)
-async def create_qr(request: Request, photo_id: int, db: Session = Depends(get_db)):
-    user_id = USER_ID
-    photo = db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
-    if photo:
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(photo.photo)
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="blue", back_color="white")
-        
-        # Збереження QR-коду з вставленим зображенням
-        qr_img.save("src/service/qr_code.png")
-        return FileResponse("src/service/qr_code.png", media_type='image') 
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Photo not found")
-
