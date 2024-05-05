@@ -2,6 +2,7 @@ from src.tests.logger import logger
 from src.database.models import User, Photo, Role, Tag
 
 filename = "photo.jpg"
+new_filename = "new_photo.jpg"
 
 def test_create_photo(client, session):
     with open(filename, "rb") as file:
@@ -55,7 +56,7 @@ def test_create_photo_no_file(client):
 
 def test_put_photo(client, session):
     public_id = session.query(Photo).filter(Photo.id==2).first().public_id
-    with open("new_photo.jpg", "rb") as file:
+    with open(new_filename, "rb") as file:
         response = client.put(
             f"/api/user/{2}",
             files={"file": file},
@@ -100,3 +101,5 @@ def test_delete_photo(client, session):
     data = response.json()
     photo = session.query(Photo).filter(Photo.id==data["id"]).first()
     assert photo == None
+
+
