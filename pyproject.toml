@@ -21,6 +21,15 @@ pydantic-settings = "^2.2.1"
 passlib = "^1.7.4"
 bcrypt = "^4.1.2"
 qrcode = "^7.4.2"
+pytest = "^8.1.1"
+pytest-mock = "^3.14.0"
+pytest-cov = "^5.0.0"
+pytest-xdist = "^3.5.0"
+
+
+[tool.pytest.ini_options]
+addopts = "--cov=<photoshare-restapi-> --cov-report html"
+pythonpath = ["."]
 
 
 [build-system]

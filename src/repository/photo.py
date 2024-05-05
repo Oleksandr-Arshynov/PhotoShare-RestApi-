@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from src.conf.config import settings
 from src.repository import tags as repository_tag
 from src.database.models import Tag, Photo, PhotoTagAssociation
-
+from src.tests.logger import logger
 
 
 
@@ -26,6 +26,11 @@ cloudinary.config(
 
 
 async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
+    logger.critical(user_id)
+    logger.critical(file)
+    logger.critical(description)
+    logger.critical(tags)
+    logger.critical(db)
     # Отримуємо завантажений файл та опис
     contents = await file.read()
 
