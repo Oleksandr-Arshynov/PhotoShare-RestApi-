@@ -76,7 +76,6 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
                 post_photo.tags[num].name
 
         if file.filename and file.filename != "upload":
-            logger.critical(file.filename)
             contents = await file.read()
             # Видаляємо файл в Cloudinary
             cloudinary.uploader.destroy(post_photo.public_id)
@@ -91,7 +90,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             # Отримуємо URL завантаженого фото з відповіді Cloudinary
             post_photo.photo = response["secure_url"]
             post_photo.public_id = response["public_id"]
-
+            db.commit()
             try:
                 shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
             except:
@@ -108,7 +107,10 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
 
     if photo: # перевіряє що photo знайдено вдало
         cloudinary.uploader.destroy(photo.public_id)
-        shutil.rmtree(f"src/static/users/{user_id}/{photo_id}")
+        try:
+            shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+        except:
+            ...
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
         db.delete(photo) 
         db.commit()

@@ -54,38 +54,49 @@ def test_create_photo_no_file(client):
 
 
 def test_put_photo(client, session):
-    public_id = session.query(Photo).filter(Photo.id==1).first().public_id
+    public_id = session.query(Photo).filter(Photo.id==2).first().public_id
     with open("new_photo.jpg", "rb") as file:
         response = client.put(
-            f"/api/user/{1}",
+            f"/api/user/{2}",
             files={"file": file},
             data={"description": "test", "tags": ["1,2,3,4,5"]}
         )
     assert response.status_code == 200, "OK"
     data = response.json()
-    assert data["id"] == 1
+    assert data["id"] == 2
     assert data["user_id"] == 1
     assert data["description"] == "test"
     assert data["public_id"] != public_id
 
 
+def test_put_photo_no_file(client, session):
+    photo = session.query(Photo).filter(Photo.id==2).first()
+    tags = [tag.name for tag in photo.tags] 
+    public_id = photo.public_id
+    response = client.put(
+        f"/api/user/{2}",
+        files={"file": ""},
+        data={"description": "new", "tags": ["6,7,8,9,10"]}
+    )
 
-# def test_put_photo_no_file(client, session):
-#     photo = session.query(Photo).filter(Photo.id==1).first()
-#     tags = [tag.name for tag in photo.tags] 
-#     public_id = photo.public_id
-#     response = client.put(
-#         f"/api/user/{1}",
-#         files={"file": ""},
-#         data={"description": "new", "tags": ["6,7,8,9,10"]}
-#     )
-
-#     assert response.status_code == 200, "OK"
-#     data = response.json()
-#     assert data["id"] == 1
-#     assert data["user_id"] == 1
-#     assert data["description"] == "new"
-#     assert data["public_id"] == public_id
-#     assert [tag["name"] for tag in data["tags"]] != tags
+    assert response.status_code == 200, "OK"
+    data = response.json()
+    assert data["id"] == 2
+    assert data["user_id"] == 1
+    assert data["description"] == "new"
+    assert data["public_id"] == public_id
+    assert [tag["name"] for tag in data["tags"]] != tags
 
 
+def test_delete_photo(client, session):
+    response = client.delete(f"/api/user/{1}")
+    assert response.status_code == 200, "OK"
+    data = response.json()
+    photo = session.query(Photo).filter(Photo.id==data["id"]).first()
+    assert photo == None
+
+    response = client.delete(f"/api/user/{2}")
+    assert response.status_code == 200, "OK"
+    data = response.json()
+    photo = session.query(Photo).filter(Photo.id==data["id"]).first()
+    assert photo == None

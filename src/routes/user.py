@@ -71,6 +71,7 @@ async def put_photo(
     photo = await repository_photo.put_photo(
         user_id, photo_id, file, description, tags, db
     )
+    logger.critical(photo.photo)
     return photo
 
 
