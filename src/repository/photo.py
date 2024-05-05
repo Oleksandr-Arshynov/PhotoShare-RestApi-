@@ -26,11 +26,6 @@ cloudinary.config(
 
 
 async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
-    logger.critical(user_id)
-    logger.critical(file)
-    logger.critical(description)
-    logger.critical(tags)
-    logger.critical(db)
     # Отримуємо завантажений файл та опис
     contents = await file.read()
     # Завантажуємо файл в Cloudinary
@@ -80,7 +75,8 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
 
-        if file.filename:
+        if file.filename and file.filename != "upload":
+            logger.critical(file.filename)
             contents = await file.read()
             # Видаляємо файл в Cloudinary
             cloudinary.uploader.destroy(post_photo.public_id)
@@ -96,7 +92,10 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             post_photo.photo = response["secure_url"]
             post_photo.public_id = response["public_id"]
 
-            shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+            try:
+                shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+            except:
+                ...
 
         post_photo.updated_at = datetime.now() # дата редагування
 

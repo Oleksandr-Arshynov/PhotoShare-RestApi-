@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import MagicMock 
-from src.database.models import User, Role, Photo
+from src.database.models import User, Role
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
