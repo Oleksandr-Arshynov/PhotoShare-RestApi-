@@ -62,7 +62,10 @@ async def put_photo(
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
 ):
-
+    logger.critical(file)
+    logger.critical(photo_id)
+    logger.critical(description)
+    logger.critical(tags)
     user_id = USER_ID   # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.put_photo(
