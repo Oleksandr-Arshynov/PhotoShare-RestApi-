@@ -33,7 +33,6 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
     logger.critical(db)
     # Отримуємо завантажений файл та опис
     contents = await file.read()
-
     # Завантажуємо файл в Cloudinary
     response = cloudinary.uploader.upload(
         contents,

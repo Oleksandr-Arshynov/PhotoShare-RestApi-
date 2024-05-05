@@ -24,6 +24,7 @@ from src.repository import tags as repository_tags
 from src.conf.config import settings
 import cloudinary.uploader
 from src.conf import messages
+from src.tests.logger import logger
 
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -45,8 +46,9 @@ async def create_photo(
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
 ):
+    logger.critical("start")
     user_id = USER_ID  # Поки немає авторизації
-
+    
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.create_photo(user_id, file, description, tags, db)
     return photo
