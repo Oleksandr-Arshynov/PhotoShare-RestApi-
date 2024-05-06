@@ -7,7 +7,7 @@ new_filename = "new_photo.jpg"
 def test_create_photo(client, session):
     with open(filename, "rb") as file:
         response = client.post(
-            "/api/user",
+            "/api/photo",
             files={"file": ("test.jpg", file, "image/jpeg")},
             data={"description": "Test Photo", "tags": ["tag1, tag2"]}
         )
@@ -27,7 +27,7 @@ def test_create_photo(client, session):
 def test_create_photo_no_data(client, session):
     with open(filename, "rb") as file:
         response = client.post(
-            "/api/user",
+            "/api/photo",
             files={"file": ("test.jpg", file, "image/jpeg")},
             data={"description": "", "tags": [""]}
         )
@@ -44,7 +44,7 @@ def test_create_photo_no_data(client, session):
 
 def test_create_photo_no_file(client):
     response = client.post(
-        "/api/user",
+        "/api/photo",
         files={"file": None},
         data={"description": "", "tags": [""]}
     )
@@ -58,7 +58,7 @@ def test_put_photo(client, session):
     public_id = session.query(Photo).filter(Photo.id==2).first().public_id
     with open(new_filename, "rb") as file:
         response = client.put(
-            f"/api/user/{2}",
+            f"/api/photo/{2}",
             files={"file": file},
             data={"description": "test", "tags": ["1,2,3,4,5"]}
         )
@@ -75,7 +75,7 @@ def test_put_photo_no_file(client, session):
     tags = [tag.name for tag in photo.tags] 
     public_id = photo.public_id
     response = client.put(
-        f"/api/user/{2}",
+        f"/api/photo/{2}",
         files={"file": ""},
         data={"description": "new", "tags": ["6,7,8,9,10"]}
     )
@@ -90,13 +90,13 @@ def test_put_photo_no_file(client, session):
 
 
 def test_delete_photo(client, session):
-    response = client.delete(f"/api/user/{1}")
+    response = client.delete(f"/api/photo/{1}")
     assert response.status_code == 200, "OK"
     data = response.json()
     photo = session.query(Photo).filter(Photo.id==data["id"]).first()
     assert photo == None
 
-    response = client.delete(f"/api/user/{2}")
+    response = client.delete(f"/api/photo/{2}")
     assert response.status_code == 200, "OK"
     data = response.json()
     photo = session.query(Photo).filter(Photo.id==data["id"]).first()

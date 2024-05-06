@@ -3,17 +3,13 @@ import uuid
 import qrcode
 import shutil
 import cloudinary.uploader
-from typing import List
 from sqlalchemy import and_
 from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
-# from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.conf.config import settings
 from src.repository import tags as repository_tag
 from src.database.models import Tag, Photo, PhotoTagAssociation, User
-from src.tests.logger import logger
 
 
 

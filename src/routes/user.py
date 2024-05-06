@@ -2,22 +2,17 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    status,
-    Request,
-    File,
-    UploadFile,
-    Form,
+    Request
 )
 
 from sqlalchemy.orm import Session
 from src.database.db import get_db
-from src.database.models import User
 from src.repository import user as repository_user
 
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-USER_ID = 4
+USER_ID = 1
 
 @router.get("")
 async def get_me_info( 
@@ -42,5 +37,4 @@ async def get_user_info(
     if user == None:
         raise HTTPException(status_code=404, detail="Username not found")
     return user
-
 
