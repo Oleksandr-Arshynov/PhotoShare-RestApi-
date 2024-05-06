@@ -1,17 +1,11 @@
 import cloudinary.uploader
 from datetime import datetime
 from sqlalchemy.orm import Session
-from fastapi import (
-    APIRouter,
-    Depends,
-    Request,
-    status
-)
+from fastapi import APIRouter, Depends, Request, status
 
 from src.database.db import get_db
 from src.repository import photo as repository_photo
 from src.conf.config import settings
-
 
 
 router = APIRouter(prefix="/transformation_photo", tags=["transformation_photo"])
@@ -26,10 +20,22 @@ cloudinary.config(
 
 USER_ID = 5
 
+
 @router.post("/cartoon/{photo_id}", status_code=status.HTTP_200_OK)
 async def cartoon_transformation_photo(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
+    """
+    Apply cartoon transformation to a photo.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to transform.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+    """
     user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
@@ -49,13 +55,17 @@ async def cartoon_transformation_photo(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(url=photo.transformation_url_cartoon, user_id=user_id, photo_id=photo_id)
+    filename = await repository_photo.create_qr_code(
+        url=photo.transformation_url_cartoon, user_id=user_id, photo_id=photo_id
+    )
     if filename != "":
         if photo.qr_url_cartoon:
-            result = await repository_photo.delete_qr_code(filename=photo.qr_url_cartoon, user_id=user_id, photo_id=photo_id)
+            result = await repository_photo.delete_qr_code(
+                filename=photo.qr_url_cartoon, user_id=user_id, photo_id=photo_id
+            )
             if result:
                 photo.qr_url_cartoon = filename
-                photo.updated_at = datetime.now() # дата редагування
+                photo.updated_at = datetime.now()  # дата редагування
                 db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
@@ -70,6 +80,17 @@ async def cartoon_transformation_photo(
 async def transformation_photo_grayscale(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
+    """
+    Apply grayscale transformation to a photo.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to transform.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+    """
     user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
@@ -87,13 +108,17 @@ async def transformation_photo_grayscale(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(url=photo.transformation_url_grayscale, user_id=user_id, photo_id=photo_id)
+    filename = await repository_photo.create_qr_code(
+        url=photo.transformation_url_grayscale, user_id=user_id, photo_id=photo_id
+    )
     if filename != "":
         if photo.qr_url_grayscale:
-            result = await repository_photo.delete_qr_code(filename=photo.qr_url_grayscale, user_id=user_id, photo_id=photo_id)
+            result = await repository_photo.delete_qr_code(
+                filename=photo.qr_url_grayscale, user_id=user_id, photo_id=photo_id
+            )
             if result:
                 photo.qr_url_grayscale = filename
-                photo.updated_at = datetime.now() # дата редагування
+                photo.updated_at = datetime.now()  # дата редагування
                 db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
@@ -108,6 +133,17 @@ async def transformation_photo_grayscale(
 async def transformation_photo_face(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
+    """
+    Apply face transformation to a photo.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to transform.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+    """
     user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
@@ -130,13 +166,17 @@ async def transformation_photo_face(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(url=photo.transformation_url_mask, user_id=user_id, photo_id=photo_id)
+    filename = await repository_photo.create_qr_code(
+        url=photo.transformation_url_mask, user_id=user_id, photo_id=photo_id
+    )
     if filename != "":
         if photo.qr_url_mask:
-            result = await repository_photo.delete_qr_code(filename=photo.qr_url_mask, user_id=user_id, photo_id=photo_id)
+            result = await repository_photo.delete_qr_code(
+                filename=photo.qr_url_mask, user_id=user_id, photo_id=photo_id
+            )
             if result:
                 photo.qr_url_mask = filename
-                photo.updated_at = datetime.now() # дата редагування
+                photo.updated_at = datetime.now()  # дата редагування
                 db.commit()
 
     # Повернути URL трансформованого зображення та оригінального зображення
@@ -151,6 +191,17 @@ async def transformation_photo_face(
 async def transformation_photo_tilt(
     request: Request, photo_id: int, db: Session = Depends(get_db)
 ):
+    """
+    Apply tilt transformation to a photo.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to transform.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+    """
     user_id = USER_ID  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
@@ -175,15 +226,19 @@ async def transformation_photo_tilt(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(url=photo.transformation_url_tilt, user_id=user_id, photo_id=photo_id)
+    filename = await repository_photo.create_qr_code(
+        url=photo.transformation_url_tilt, user_id=user_id, photo_id=photo_id
+    )
     if filename != "":
         if photo.qr_url_tilt:
-            result = await repository_photo.delete_qr_code(filename=photo.qr_url_tilt, user_id=user_id, photo_id=photo_id)
+            result = await repository_photo.delete_qr_code(
+                filename=photo.qr_url_tilt, user_id=user_id, photo_id=photo_id
+            )
             if result:
                 photo.qr_url_tilt = filename
-                photo.updated_at = datetime.now() # дата редагування
+                photo.updated_at = datetime.now()  # дата редагування
                 db.commit()
-            
+
     # Повернути URL трансформованого зображення та оригінального зображення
     return {
         "transformed_image_url": transformed_image["secure_url"],

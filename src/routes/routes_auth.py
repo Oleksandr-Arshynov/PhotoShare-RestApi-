@@ -25,6 +25,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # Реєстрація користувача з роллю
 @router.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    Registers a new user with a role.
+
+    Args:
+        user (UserCreate): The user data including username, password, and email.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: A message confirming user registration along with user details.
+    """
+
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Користувач вже існує")
@@ -58,16 +69,26 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 # Авторизація адміністратора
 @router.post("/admin-login", response_model=Token)
 def admin_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
+    """
+    Authenticates an admin user and generates an access token.
+
+    Args:
+        form_data (OAuth2PasswordRequestForm): Form data including username and password.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        Token: The generated access token.
+    """
     user = authenticate_user(db, form_data.username, form_data.password)
     if user.role_id != 1:
         raise HTTPException(
             status_code=403,
             detail="Доступ дозволено лише адміністраторам",
         )
-    
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username, "role": user.role_id},
@@ -79,16 +100,27 @@ def admin_login(
 # Авторизація модератора
 @router.post("/moderator-login", response_model=Token)
 def moderator_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
+    """
+    Authenticates a moderator user and generates an access token.
+
+    Args:
+        form_data (OAuth2PasswordRequestForm): Form data including username and password.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        Token: The generated access token.
+    """
+
     user = authenticate_user(db, form_data.username, form_data.password)
     if user.role_id != 2:
         raise HTTPException(
             status_code=403,
             detail="Доступ дозволено лише модераторам",
         )
-    
+
     # Створюємо JWT-токен з інформацією про роль
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -97,19 +129,30 @@ def moderator_login(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 # Авторизація юзера
 @router.post("/user-login", response_model=Token)
 def user_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
+    """
+    Authenticates a regular user and generates an access token.
+
+    Args:
+        form_data (OAuth2PasswordRequestForm): Form data including username and password.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        Token: The generated access token.
+    """
     user = authenticate_user(db, form_data.username, form_data.password)
     if user.role_id != 3:
         raise HTTPException(
             status_code=403,
             detail="Доступ дозволено лише звичайним користувачам",
         )
-    
+
     # Створюємо JWT-токен з інформацією про роль
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -122,20 +165,43 @@ def user_login(
 # Доступ адміністратора
 admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
+
 @admin_router.get("/admin-only", dependencies=[Depends(require_role(1))])
 def admin_only():
+    """
+    Allows access only to admin users.
+
+    Returns:
+        Router: The admin router containing endpoints accessible only to admin users.
+    """
     return Admin
+
 
 # Доступ модератора
 moderator_router = APIRouter(prefix="/moderator", tags=["moderator"])
 
+
 @moderator_router.get("/moderator-only", dependencies=[Depends(require_role(2))])
 def moderator_only():
+    """
+    Allows access only to moderator users.
+
+    Returns:
+        Router: The moderator router containing endpoints accessible only to moderator users.
+    """
     return Moderator
+
 
 # Доступ звичайного користувача
 user_router = APIRouter(prefix="/user", tags=["user"])
 
+
 @user_router.get("/user-only", dependencies=[Depends(require_role(3))])
 def user_only():
+    """
+    Allows access only to regular users.
+
+    Returns:
+        Router: The user router containing endpoints accessible only to regular users.
+    """
     return Check_User

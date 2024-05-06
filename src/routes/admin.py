@@ -1,5 +1,9 @@
 from src.auth.dependencies_auth import require_role
-from src.repository.comment import create_comment_rep, delete_comment_rep, update_comment_rep
+from src.repository.comment import (
+    create_comment_rep,
+    delete_comment_rep,
+    update_comment_rep,
+)
 from src.database.models import Photo, Comment, User
 from src.schemas.coment_schemas import (
     CommentResponse,
@@ -45,6 +49,19 @@ async def create_upload_photo(
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
 ):
+    """
+    Uploads a new photo.
+
+    Args:
+        request (Request): The incoming request.
+        file (UploadFile): The image file to upload.
+        description (str, optional): Description of the photo. Defaults to None.
+        tags (List[str], optional): List of tags associated with the photo. Defaults to None.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The uploaded photo details.
+    """
     user_id = 5  # Поки немає авторизації
 
     tags = await repository_tags.editing_tags(tags)
@@ -61,6 +78,20 @@ async def put_photo(
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
 ):
+    """
+    Updates an existing photo.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to update.
+        file (UploadFile, optional): The new image file. Defaults to None.
+        description (str, optional): The updated description of the photo. Defaults to None.
+        tags (List[str], optional): The updated list of tags associated with the photo. Defaults to None.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The updated photo details.
+    """
 
     user_id = 5  # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
@@ -72,6 +103,17 @@ async def put_photo(
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a photo based on its unique identifier.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to delete.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The deleted photo details.
+    """
     user_id = 5  # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
 
@@ -80,6 +122,16 @@ async def delete_photo(request: Request, photo_id: int, db: Session = Depends(ge
 
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_photos(request: Request, db: Session = Depends(get_db)):
+    """
+    Returns a list of all photos for the authenticated user.
+
+    Args:
+        request (Request): The incoming request.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        List[dict]: List of photo details.
+    """
     user_id = 5  # Поки немає авторизації
     photo = await repository_photo.get_photos(user_id, db)
     return photo
@@ -87,6 +139,17 @@ async def get_photos(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/{photo_id}", status_code=status.HTTP_200_OK)
 async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    """
+    Returns a specific photo based on its unique identifier.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to retrieve.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The photo details.
+    """
     user_id = 5  # Поки немає авторизації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
     return photo
@@ -96,6 +159,18 @@ async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_d
 async def edit_photo_description(
     user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
 ):
+    """
+    Updates the description of a photo based on its unique identifier.
+
+    Args:
+        user_id (int): The ID of the user.
+        photo_id (int): The ID of the photo to update.
+        new_description (str): The new description for the photo.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The updated photo details.
+    """
     # Перевіряємо, чи існує фотографія з вказаним ID
     photo = repository_photo.get_photo(user_id, photo_id, db)
     if photo is None:
@@ -122,6 +197,18 @@ async def edit_photo_description(
 async def create_comment(
     comment: CommentSchema, user_id: int, photo_id: int, db: Session = Depends(get_db)
 ):
+    """
+    Creates a new comment for a specific photo.
+
+    Args:
+        comment (CommentSchema): The comment data.
+        user_id (int): The ID of the user.
+        photo_id (int): The ID of the photo.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The created comment details.
+    """
 
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
@@ -141,6 +228,19 @@ async def update_comment(
     user_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Updates an existing comment for a specific photo.
+
+    Args:
+        updated_comment (CommentUpdateSchema): The updated comment data.
+        comment_id (int): The ID of the comment to update.
+        photo_id (int): The ID of the photo.
+        user_id (int): The ID of the user.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The updated comment details.
+    """
 
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
@@ -167,33 +267,64 @@ async def update_comment(
 
 
 @router.delete("/{comment_id}")
-def delete_comment(comment_id: int,user_id:int, photo_id: int, db: Session = Depends(get_db)):
+def delete_comment(
+    comment_id: int, user_id: int, photo_id: int, db: Session = Depends(get_db)
+):
+    """
+    Deletes a comment for a specific photo.
+
+    Args:
+        comment_id (int): The ID of the comment to delete.
+        user_id (int): The ID of the user.
+        photo_id (int): The ID of the photo.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The deleted comment details.
+    """
 
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=messages.PHOTO_NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
         )
     else:
-        comment = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id, Comment.user_id == user_id).first()
+        comment = (
+            db.query(Comment)
+            .filter(
+                Comment.id == comment_id,
+                Comment.photo_id == photo_id,
+                Comment.user_id == user_id,
+            )
+            .first()
+        )
         if not comment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=messages.COMMENT_NOT_FOUND
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
             )
 
-        comment = delete_comment_rep(db,photo_id, comment_id)
+        comment = delete_comment_rep(db, photo_id, comment_id)
         return comment
+
 
 # Ендпоінт видалення користувача за ID
 @router.delete("/delete-user/{user_id}", dependencies=[Depends(require_role(1))])
 def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a user based on their unique identifier.
+
+    Args:
+        user_id (int): The ID of the user to delete.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: Confirmation message of the deleted user.
+    """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Користувача не знайдено")
-    
+
     db.delete(user)
     db.commit()
-    
+
     return {"msg": f"Користувач {user.username} видалений"}

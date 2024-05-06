@@ -22,6 +22,18 @@ router = APIRouter(prefix="/moderator", tags=["moderator"])
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
 async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a photo as a moderator.
+
+    Args:
+        request (Request): The incoming request.
+        photo_id (int): The ID of the photo to delete.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The deleted photo details.
+    """
+
     user_id = 5  # Поки немає авторизації
     photo = await repository_photo.delete_photo(user_id, photo_id, db)
 
@@ -36,6 +48,19 @@ async def update_comment(
     user_id: int,
     db: Session = Depends(get_db),
 ):
+    """
+    Updates an existing comment for a specific photo as a moderator.
+
+    Args:
+        updated_comment (CommentUpdateSchema): The updated comment data.
+        comment_id (int): The ID of the comment to update.
+        photo_id (int): The ID of the photo.
+        user_id (int): The ID of the user.
+        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
+
+    Returns:
+        dict: The updated comment details.
+    """
 
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
     if not photo:
