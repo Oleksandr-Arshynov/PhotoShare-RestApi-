@@ -39,9 +39,80 @@
     python main.py
     ```
 
+***Usage***
 
+### Authentication and Authorization
 
-## Usage
+#### Register User [/auth/register]
+
+Registers a new user with a role.
+
+#### Admin Login [/auth/admin-login]
+
+Authenticates an admin user and generates an access token.
+
+#### Moderator Login [/auth/moderator-login]
+
+Authenticates a moderator user and generates an access token.
+
+#### User Login [/auth/user-login]
+
+Authenticates a regular user and generates an access token.
+
+#### Admin Router [/admin]
+
+Provides endpoints accessible only to admin users.
+
+#### Moderator Router [/moderator]
+
+Provides endpoints accessible only to moderator users.
+
+#### User Router [/user]
+
+Provides endpoints accessible only to regular users.
+
+### Admin Photo Management
+
+#### Upload Photo [/admin/{upload_photo}]
+
+Uploads a new photo.
+
+#### Update Photo [/admin/{photo_id}]
+
+Updates an existing photo.
+
+#### Delete Photo [/admin/{photo_id}]
+
+Deletes a photo.
+
+#### Get All Photos [/admin]
+
+Returns a list of all photos for the authenticated user.
+
+#### Get Photo [/admin/{photo_id}]
+
+Returns a specific photo based on its unique identifier.
+
+#### Edit Photo Description [/admin/edit_photo_description/{user_id}/{photo_id}]
+
+Updates the description of a photo based on its unique identifier.
+
+#### Create Comment [/admin/create_comment]
+
+Creates a new comment for a specific photo.
+
+#### Update Comment [/admin/{comment_id}]
+
+Updates an existing comment for a specific photo.
+
+#### Delete Comment [/admin/{comment_id}]
+
+Deletes a comment for a specific photo.
+
+#### Delete User [/admin/delete-user/{user_id}]
+
+Deletes a user based on their unique identifier.
+
 
 ### Upload Photo
 - **Endpoint:** `/photo/`
@@ -62,6 +133,41 @@
   - `photo_id`: ID of the photo to edit.
   - `new_description`: New description for the photo.
 - **Response:** Returns the updated photo details.
+
+### Delete Photo
+- **Endpoint:** `/photo/{photo_id}`
+- **Method:** DELETE
+- **Description:** Deletes a photo.
+- **Parameters:**
+  - `photo_id`: ID of the photo to delete.
+- **Response:** Returns the deleted photo details.
+
+### Get All Photos
+- **Endpoint:** `/photo/`
+- **Method:** GET
+- **Description:** Retrieves all photos for the current user.
+- **Parameters:** None.
+- **Response:** Returns a list of photo details for the current user.
+
+### Get Photo by ID
+- **Endpoint:** `/photo/{photo_id}`
+- **Method:** GET
+- **Description:** Retrieves a specific photo by its ID.
+- **Parameters:**
+  - `photo_id`: ID of the photo to retrieve.
+- **Response:** Returns the details of the requested photo.
+
+### Update Comment
+- **Endpoint:** `/photo/{comment_id}`
+- **Method:** PUT
+- **Description:** Updates an existing comment for a photo.
+- **Parameters:**
+  - `comment_id`: ID of the comment to update.
+  - `photo_id`: ID of the photo.
+  - `user_id`: ID of the user.
+  - `updated_comment`: The updated comment data.
+- **Response:** Returns the updated comment details.
+
 
 ### Transformations
 
@@ -105,4 +211,6 @@
   - `repository/`: Directory with repository classes for interacting with the database.
   - `conf/`: Directory containing application configurations.
   - `routes/`: Directory containing FastAPI router modules.
+  - `schemas/`: Directory with schema
+  - `tests/`: Directory containing tests
 - `pyproject.toml`: Poetry configuration file containing project dependencies.

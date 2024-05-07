@@ -30,8 +30,13 @@ def update_comment_rep(db: Session, comment_id: int, updated_comment: CommentUpd
 
 
 def delete_comment_rep(db: Session, photo_id: int, comment_id: int):
-    comment_to_delete = db.query(Comment).filter(and_(Comment.id == comment_id, Comment.photo_id == photo_id)).first()
+
+
+    # stmt = select(Comment).filter_by(id=comment_id,photo_id = photo_id)
+    # comment = db.execute(stmt)
+    # comment = comment.scalar_one_or_none()
+    comment_to_delete = db.query(Comment).filter(Comment.id == comment_id, Comment.photo_id == photo_id).first()
     if comment_to_delete:
         db.delete(comment_to_delete)
         db.commit()
-        return comment_to_delete
+    return comment_to_delete

@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-import src
+from src.database.db import get_db, Base
 from main import app
 from src.database.models import Base
 
@@ -20,7 +20,7 @@ def setup_and_teardown():
     Base.metadata.drop_all(bind=engine)
 
 # Зміна залежності на тестову
-app.dependency_overrides[src.dependencies.get_db] = lambda: TestingSessionLocal()
+app.dependency_overrides[get_db] = lambda: TestingSessionLocal()
 
 def test_admin_role_on_first_user():
     response = client.post(
