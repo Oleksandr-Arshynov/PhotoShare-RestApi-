@@ -1,99 +1,101 @@
-# import pytest
-# from fastapi.testclient import TestClient
-# from sqlalchemy.orm import sessionmaker
-# from sqlalchemy import create_engine
-# from src.database.db import get_db, Base
-# from main import app
-# from src.database.models import Base
+import pytest
+from main import app
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+import src.database.db
+from src.database.models import Base
+from src.database.db import get_db
 
-# # Тестова база даних
-# TEST_DATABASE_URL = "sqlite:///./test.db"
-# engine = create_engine(TEST_DATABASE_URL)
-# TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+# Створення тестової бази даних
+TEST_DATABASE_URL = "sqlite:///./test_auth.db"
+engine = create_engine(TEST_DATABASE_URL)
+TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+app.dependency_overrides[src.database.db.get_db] = lambda: TestingSessionLocal()
 
-# client = TestClient(app)
+client = TestClient(app)
 
-# @pytest.fixture(autouse=True)
-# def setup_and_teardown():
-#     Base.metadata.create_all(bind=engine)
-#     yield
-#     Base.metadata.drop_all(bind=engine)
+#@pytest.fixture(autouse=True)
+#def setup_and_teardown():
+    # Створення таблиць перед тестами
+    #src.database.models.Base.metadata.create_all(bind=engine)
+    #yield
+    # Видалення таблиць після тестів
+    #src.database.models.Base.metadata.drop_all(bind=engine)
 
-# # Зміна залежності на тестову
-# app.dependency_overrides[get_db] = lambda: TestingSessionLocal()
+# Реєстрація користувача
+def test_register_user():
+    response = client.post(
+        "/auth/register",
+        json={
+            "username": "new_user",
+            "password": "securepassword",
+            "email": "newuser@example.com",
+        },
+    )
+    assert response.status_code == 200
+    assert "msg" in response.json() and response.json()["msg"] == "Користувач зареєстрований"
 
-# def test_admin_role_on_first_user():
-#     response = client.post(
-#         "api/auth/register",
-#         json={
-#             "username": "firstuser",
-#             "password": "firstpassword",
-#             "email": "first@example.com",
-#         },
-#     )
-#     assert response.status_code == 200
-#     user = response.json()["user"]
-#     print(user)
-#     assert user["role_id"] == 1
+# Повторна реєстрація того ж користувача
+def test_register_duplicate_user():
+    client.post(
+        "/auth/register",
+        json={
+            "username": "duplicate_user",
+            "password": "securepassword",
+            "email": "duplicate@example.com",
+        },
+    )
 
-# def test_register_user_and_check_role():
-#     # Зареєструємо першого користувача, який є адміністратором
-#     client.post(
-#         "api/auth/register",
-#         json={
-#             "username": "firstuser",
-#             "password": "firstpassword",
-#             "email": "first@example.com",
-#         },
-#     )
+    response = client.post(
+        "/auth/register",
+        json={
+            "username": "duplicate_user",
+            "password": "securepassword",
+            "email": "duplicate2@example.com",
+        },
+    )
+    assert response.status_code == 400
+    assert "Користувач вже існує" in response.json()["detail"]
 
-#     # Зареєструємо іншого користувача, який має бути юзером
-#     response = client.post(
-#         "api/auth/register",
-#         json={
-#             "username": "seconduser",
-#             "password": "secondpassword",
-#             "email": "second@example.com",
-#         },
-#     )
-    
-#     assert response.status_code == 200
-#     user = response.json()["user"]
-    
-#     assert user["role_id"] == 2
+# Авторизація з правильними обліковими даними
+def test_login_user():
+    client.post(
+        "/auth/register",
+        json={
+            "username": "user_login",
+            "password": "securepassword",
+            "email": "loginuser@example.com",
+        },
+    )
 
-# def test_login_and_check_role():
-#     # Реєструємо користувача
-#     client.post(
-#         "api/auth/register",
-#         json={
-#             "username": "testuser",
-#             "password": "testpassword",
-#             "email": "test@example.com",
-#         },
-#     )
+    response = client.post(
+        "/auth/login",
+        data={
+            "username": "user_login",
+            "password": "securepassword",
+        },
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json() and response.json()["token_type"] == "bearer"
 
-#     # Авторизуємося та отримуємо токен
-#     response = client.post(
-#         "api/auth/user-login",
-#         data={
-#             "username": "testuser",
-#             "password": "testpassword"
-#         }
-#     )
-#     assert response.status_code == 200
-#     token = response.json()["access_token"]
+# Авторизація з неправильним паролем
+def test_login_with_incorrect_password():
+    client.post(
+        "/auth/register",
+        json={
+            "username": "incorrect_password",
+            "password": "securepassword",
+            "email": "incorrectpass@example.com",
+        },
+    )
 
-#     # Перевіряємо ендпоінт, який доступний лише адміністратору
-#     response = client.get(
-#         "api/auth/admin-login",
-#         headers={"Authorization": f"Bearer {token}"}
-#     )
-#     assert response.status_code == 403  # Очікуємо помилку, оскільки користувач не адміністратор
-
-#     # Перевірка ендпоінту для модератора
-#     response = client.get(
-#         "api/auth/moderator-login",
-#         headers={"Authorization": f"Bearer {token}"}
-#     )
-#     assert response.status_code == 403  # Очікуємо помилку, оскільки користувач не модератор
+    response = client.post(
+        "/auth/login",
+        data={
+            "username": "incorrect_password",
+            "password": "wrongpassword",
+        },
+    )
+    assert response.status_code == 401
+    assert "Невірне ім'я користувача або пароль" in response.json()["detail"]
