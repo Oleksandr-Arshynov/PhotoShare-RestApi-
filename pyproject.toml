@@ -27,3 +27,9 @@ pytest = "^8.2.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = ["src/tests"]
+filterwarnings = "ignore::DeprecationWarning"
