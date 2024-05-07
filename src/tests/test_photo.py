@@ -34,6 +34,7 @@ def test_create_photo_no_data(client, session):
 
     assert response.status_code == 201, "Created"
     data = response.json()
+    print(data)
     photo = session.query(Photo).filter(Photo.id==data["id"]).first()
     assert data["id"] == photo.id
     assert data["user_id"] == photo.user_id

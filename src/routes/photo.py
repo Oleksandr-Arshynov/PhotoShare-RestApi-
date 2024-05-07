@@ -1,5 +1,6 @@
+from src.auth.dependencies_auth import auth_service
 from src.repository.comment import create_comment_rep, update_comment_rep
-from src.database.models import Photo, Comment
+from src.database.models import Photo, Comment, User
 from src.schemas.coment_schemas import (
     CommentResponse,
     CommentSchema,
@@ -24,6 +25,7 @@ from src.repository import tags as repository_tags
 from src.conf.config import settings
 import cloudinary.uploader
 from src.conf import messages
+from src.schemas.user_schemas import UserCreate
 from src.tests.logger import logger
 
 
@@ -40,16 +42,17 @@ USER_ID = 1
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_photo(
-    request: Request,
     file: UploadFile = File(...),
     description: str = Form(None),
     tags: List[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user)
 ):
-    user_id = USER_ID  # Поки немає авторизації
+    # Поки немає авторизації
+    logger.critical(create_photo())
     
     tags = await repository_tags.editing_tags(tags)
-    photo = await repository_photo.create_photo(user_id, file, description, tags, db)
+    photo = await repository_photo.create_photo(file, description, tags, db, user_id=current_user.id)
     return photo
 
 

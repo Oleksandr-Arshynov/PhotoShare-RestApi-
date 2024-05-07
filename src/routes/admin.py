@@ -1,4 +1,4 @@
-from src.auth.dependencies_auth import require_role
+
 from src.repository.comment import (
     create_comment_rep,
     delete_comment_rep,
@@ -29,6 +29,7 @@ from src.repository import tags as repository_tags
 from src.conf.config import settings
 import cloudinary.uploader
 from src.conf import messages
+from src.auth.dependencies_auth import auth_service
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -308,7 +309,7 @@ def delete_comment(
 
 
 # Ендпоінт видалення користувача за ID
-@router.delete("/delete-user/{user_id}", dependencies=[Depends(require_role(1))])
+@router.delete("/delete-user/{user_id}", dependencies=[Depends(auth_service.require_role())])
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     """
     Deletes a user based on their unique identifier.

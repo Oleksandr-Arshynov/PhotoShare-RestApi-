@@ -3,7 +3,7 @@ from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
-    hashed_password: str
+    password: str
     email: str
 
 class Token(BaseModel):

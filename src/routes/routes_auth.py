@@ -1,207 +1,109 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from datetime import timedelta
-from src.conf.messages import ACCESS_TOKEN_EXPIRE_MINUTES
+
+import fastapi
+import fastapi.security
+from src.tests.logger import logger
+
 from src.database.db import get_db
-from src.auth.dependencies_auth import (
-    authenticate_user,
-    get_password_hash,
-    create_access_token,
-    require_role,
-)
-from src.schemas.schemas_auth import Token
-from src.database.models import User
-from src.schemas.user_schemas import UserCreate
-
-import src.routes.admin as Admin
-import src.routes.moderator as Moderator
-import src.routes.user as Check_User
+from src.schemas import schemas_auth
+from src.database import models
+from src.auth.dependencies_auth import auth_service
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = fastapi.APIRouter(prefix="/auth", tags=["auth"])
 
 
-# Реєстрація користувача з роллю
-@router.post("/register")
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    """
-    Registers a new user with a role.
+@router.post("/signup", status_code=fastapi.status.HTTP_201_CREATED)
+async def create_user(
+    body: schemas_auth.UserCreate,
+    request: fastapi.Request,
+    db=fastapi.Depends(get_db),
+):
+    user = await auth_service.get_user_by_email(body.email, db)
+    if user:
+        raise fastapi.HTTPException(status_code=409, detail="User already exists")
 
-    Args:
-        user (UserCreate): The user data including username, password, and email.
-        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
-
-    Returns:
-        dict: A message confirming user registration along with user details.
-    """
-
-    existing_user = db.query(User).filter(User.username == user.username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Користувач вже існує")
-
-    # Перший користувач - адмін, другий - модератор, решта - юзери
-    user_count = db.query(User).count()
-    if user_count == 0:
-        role_id = 1  # Адміністратор
-    elif user_count == 1:
-        role_id = 2  # Модератор
-    else:
-        role_id = 3  # Звичайний користувач
-
-    hashed_password = get_password_hash(user.password)
-    new_user = User(
-        username=user.username,
-        hashed_password=hashed_password,
-        email=user.email,
-        role_id=role_id,
+    hashed_password = auth_service.get_password_hash(body.password)
+    new_user = models.User(
+        username=body.username, email=body.email, hashed_password=hashed_password
     )
+
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
+
+    return new_user
+
+
+@router.post("/login")
+async def login(
+    body: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends(),
+    db=fastapi.Depends(get_db),
+) -> schemas_auth.Token:
+    user = (
+        db.query(models.User)
+        .filter(models.User.email == body.username)
+        .first()
+    )
+    if not user:
+        raise fastapi.HTTPException(status_code=401, detail="User not found")
+    if not user:
+        logger.critical(user.hashed_password)
+        logger.critical(body.password)
+        
+        raise fastapi.HTTPException(status_code=401, detail="User not confirmed")
+    verification = auth_service.verify_password(body.password, user.hashed_password)
+    if not verification:
+        raise fastapi.HTTPException(status_code=400, detail="Incorrect credentials")
+
+    refresh_token = await auth_service.create_access_token(
+        payload={"sub": body.username}
+    )
+    access_token = await auth_service.create_access_token(
+        payload={"sub": body.username}
+    )
+
+    user.refresh_token = refresh_token
+    db.commit()
 
     return {
-        "msg": "Користувач зареєстрований",
-        "user": {"username": new_user.username, "role_id": new_user.role_id},
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
     }
 
 
-# Авторизація адміністратора
-@router.post("/admin-login", response_model=Token)
-def admin_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
+get_refresh_token = fastapi.security.HTTPBearer()
+
+
+@router.get("/refresh_token")
+async def refresh_token(
+    credentials: fastapi.security.HTTPAuthorizationCredentials = fastapi.Security(
+        get_refresh_token
+    ),
+    db=fastapi.Depends(get_db),
 ):
-    """
-    Authenticates an admin user and generates an access token.
-
-    Args:
-        form_data (OAuth2PasswordRequestForm): Form data including username and password.
-        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
-
-    Returns:
-        Token: The generated access token.
-    """
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if user.role_id != 1:
-        raise HTTPException(
-            status_code=403,
-            detail="Доступ дозволено лише адміністраторам",
-        )
-
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "role": user.role_id},
-        expires_delta=access_token_expires,
+    token = credentials.credentials
+    username = await auth_service.decode_refresh_token(token)
+    user = (
+        db.query(models.User)
+        .filter(models.User.refresh_token == token)
+        .first()
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    if user.refresh_token != token:
+        await auth_service.update_token(user, new_token=None, db=db)
+        raise fastapi.HTTPException(status_code=400, detail="Invalid token")
+
+    refresh_token = await auth_service.create_refresh_token(payload={"sub": username})
+    access_token = await auth_service.create_access_token(payload={"sub": username})
+    user.refresh_token = refresh_token
+    db.commit()
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
-# Авторизація модератора
-@router.post("/moderator-login", response_model=Token)
-def moderator_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
-    """
-    Authenticates a moderator user and generates an access token.
-
-    Args:
-        form_data (OAuth2PasswordRequestForm): Form data including username and password.
-        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
-
-    Returns:
-        Token: The generated access token.
-    """
-
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if user.role_id != 2:
-        raise HTTPException(
-            status_code=403,
-            detail="Доступ дозволено лише модераторам",
-        )
-
-    # Створюємо JWT-токен з інформацією про роль
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "role": user.role_id},
-        expires_delta=access_token_expires,
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
-# Авторизація юзера
-@router.post("/user-login", response_model=Token)
-def user_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
-):
-    """
-    Authenticates a regular user and generates an access token.
-
-    Args:
-        form_data (OAuth2PasswordRequestForm): Form data including username and password.
-        db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
-
-    Returns:
-        Token: The generated access token.
-    """
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if user.role_id != 3:
-        raise HTTPException(
-            status_code=403,
-            detail="Доступ дозволено лише звичайним користувачам",
-        )
-
-    # Створюємо JWT-токен з інформацією про роль
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username, "role": user.role_id},
-        expires_delta=access_token_expires,
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
 
 
-# Доступ адміністратора
-admin_router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-@admin_router.get("/admin-only", dependencies=[Depends(require_role(1))])
-def admin_only():
-    """
-    Allows access only to admin users.
-
-    Returns:
-        Router: The admin router containing endpoints accessible only to admin users.
-    """
-    return Admin
-
-
-# Доступ модератора
-moderator_router = APIRouter(prefix="/moderator", tags=["moderator"])
-
-
-@moderator_router.get("/moderator-only", dependencies=[Depends(require_role(2))])
-def moderator_only():
-    """
-    Allows access only to moderator users.
-
-    Returns:
-        Router: The moderator router containing endpoints accessible only to moderator users.
-    """
-    return Moderator
-
-
-# Доступ звичайного користувача
-user_router = APIRouter(prefix="/user", tags=["user"])
-
-
-@user_router.get("/user-only", dependencies=[Depends(require_role(3))])
-def user_only():
-    """
-    Allows access only to regular users.
-
-    Returns:
-        Router: The user router containing endpoints accessible only to regular users.
-    """
-    return Check_User
