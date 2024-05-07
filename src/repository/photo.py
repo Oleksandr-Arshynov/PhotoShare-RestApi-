@@ -3,17 +3,13 @@ import uuid
 import qrcode
 import shutil
 import cloudinary.uploader
-from typing import List
 from sqlalchemy import and_
 from datetime import datetime
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
-# from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.conf.config import settings
 from src.repository import tags as repository_tag
-from src.database.models import Tag, Photo, PhotoTagAssociation
-
+from src.database.models import Tag, Photo, PhotoTagAssociation, User
 
 
 
@@ -28,7 +24,6 @@ cloudinary.config(
 async def create_photo(user_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Photo: # db: AsyncSession
     # Отримуємо завантажений файл та опис
     contents = await file.read()
-
     # Завантажуємо файл в Cloudinary
     response = cloudinary.uploader.upload(
         contents,
@@ -49,7 +44,9 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
         db.commit()
         tags = await repository_tag.create_tag(photo_id=photo.id, tags=tags, db=db) # додає теги
         photo = db.query(Photo).filter(Photo.id==photo.id).first()
-
+        user = db.query(User).filter(User.id==photo.user_id).first()
+        user.number_of_photos += 1
+        db.commit()
         for num in range(0, len(tags)): # без цього не повертає теги 
             photo.tags[num].name
 
@@ -76,7 +73,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
 
-        if file.filename:
+        if file.filename and file.filename != "upload":
             contents = await file.read()
             # Видаляємо файл в Cloudinary
             cloudinary.uploader.destroy(post_photo.public_id)
@@ -91,8 +88,11 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
             # Отримуємо URL завантаженого фото з відповіді Cloudinary
             post_photo.photo = response["secure_url"]
             post_photo.public_id = response["public_id"]
-
-            shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+            db.commit()
+            try:
+                shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+            except:
+                ...
 
         post_photo.updated_at = datetime.now() # дата редагування
 
@@ -105,11 +105,16 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
 
     if photo: # перевіряє що photo знайдено вдало
         cloudinary.uploader.destroy(photo.public_id)
-        shutil.rmtree(f"src/static/users/{user_id}/{photo_id}")
+        try:
+            shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
+        except:
+            ...
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
         db.delete(photo) 
         db.commit()
-
+        user = db.query(User).filter(User.id==photo.user_id).first()
+        user.number_of_photos -= 1
+        db.commit()
         for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
             photo.tags[num].name
         

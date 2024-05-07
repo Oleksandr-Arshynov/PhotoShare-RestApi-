@@ -7,17 +7,18 @@ from src.database.models import User, Role
 from src.routes import routes_auth
 from src.routes import admin as routes_admin
 from src.routes import moderator as routes_moderator
-from src.routes import user as routes_user
+from src.routes import photo as routes_photo
 from src.routes import transformation_photo as routes_transformation_photo
+from src.routes import user as routes_user
 
 app = FastAPI()
 
 app.include_router(routes_auth.router, prefix="/api")
 app.include_router(routes_admin.router, prefix="/api")
 app.include_router(routes_moderator.router, prefix="/api")
-app.include_router(routes_user.router, prefix="/api")
+app.include_router(routes_photo.router, prefix="/api")
 app.include_router(routes_transformation_photo.router, prefix="/api")
-
+app.include_router(routes_user.router, prefix="/api")
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def static(request: Request, db: Session = Depends(get_db)):

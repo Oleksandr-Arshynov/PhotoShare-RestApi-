@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from src.database.db import get_db, Base
 from main import app
+from src.database.models import Base
 
 # Тестова база даних
 TEST_DATABASE_URL = "sqlite:///./test.db"
