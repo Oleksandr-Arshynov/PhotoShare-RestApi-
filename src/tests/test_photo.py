@@ -1,8 +1,8 @@
 from src.tests.logger import logger  
 from src.database.models import User, Photo, Role, Tag
 
-filename = "/Users/oleksandrarshinov/Desktop/Documents/Repository/PhotoShare-RestApi-/src/tests/photo.jpg"
-new_filename = "/Users/oleksandrarshinov/Desktop/Documents/Repository/PhotoShare-RestApi-/src/tests/new_photo.jpg"
+filename = "tests/photo.jpg"
+new_filename = "tests/new_photo.jpg"
 
 def test_create_photo(client, session):
     with open(filename, "rb") as file:
