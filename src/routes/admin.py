@@ -1,4 +1,3 @@
-
 from src.repository.comment import (
     create_comment_rep,
     delete_comment_rep,
@@ -49,6 +48,7 @@ async def create_upload_photo(
     description: str = Form(None),
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Uploads a new photo.
@@ -63,10 +63,11 @@ async def create_upload_photo(
     Returns:
         dict: The uploaded photo details.
     """
-    user_id = 5  # Поки немає авторизації
 
     tags = await repository_tags.editing_tags(tags)
-    photo = await repository_photo.create_photo(user_id, file, description, tags, db)
+    photo = await repository_photo.create_photo(
+        current_user.id, file, description, tags, db
+    )
     return photo
 
 
@@ -78,6 +79,7 @@ async def put_photo(
     description: str = Form(None),
     tags: List[str] = Form(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Updates an existing photo.
@@ -93,17 +95,20 @@ async def put_photo(
     Returns:
         dict: The updated photo details.
     """
-
-    user_id = 5  # Поки немає авторизації
     tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.put_photo(
-        user_id, photo_id, file, description, tags, db
+        current_user.id, photo_id, file, description, tags, db
     )
     return photo
 
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
-async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+async def delete_photo(
+    request: Request,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
     """
     Deletes a photo based on its unique identifier.
 
@@ -115,14 +120,17 @@ async def delete_photo(request: Request, photo_id: int, db: Session = Depends(ge
     Returns:
         dict: The deleted photo details.
     """
-    user_id = 5  # Поки немає авторизації
-    photo = await repository_photo.delete_photo(user_id, photo_id, db)
+    photo = await repository_photo.delete_photo(current_user.id, photo_id, db)
 
     return photo
 
 
 @router.get("", status_code=status.HTTP_200_OK)
-async def get_photos(request: Request, db: Session = Depends(get_db)):
+async def get_photos(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
     """
     Returns a list of all photos for the authenticated user.
 
@@ -133,13 +141,17 @@ async def get_photos(request: Request, db: Session = Depends(get_db)):
     Returns:
         List[dict]: List of photo details.
     """
-    user_id = 5  # Поки немає авторизації
-    photo = await repository_photo.get_photos(user_id, db)
+    photo = await repository_photo.get_photos(current_user.id, db)
     return photo
 
 
 @router.get("/{photo_id}", status_code=status.HTTP_200_OK)
-async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+async def get_photo(
+    request: Request,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
     """
     Returns a specific photo based on its unique identifier.
 
@@ -151,14 +163,17 @@ async def get_photo(request: Request, photo_id: int, db: Session = Depends(get_d
     Returns:
         dict: The photo details.
     """
-    user_id = 5  # Поки немає авторизації
-    photo = await repository_photo.get_photo(user_id, photo_id, db)
+    photo = await repository_photo.get_photo(current_user.id, photo_id, db)
     return photo
 
 
 @router.put("/edit_photo_description/{user_id}/{photo_id}")
 async def edit_photo_description(
-    user_id: int, photo_id: int, new_description: str, db: Session = Depends(get_db)
+    user_id: int,
+    photo_id: int,
+    new_description: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Updates the description of a photo based on its unique identifier.
@@ -173,7 +188,7 @@ async def edit_photo_description(
         dict: The updated photo details.
     """
     # Перевіряємо, чи існує фотографія з вказаним ID
-    photo = repository_photo.get_photo(user_id, photo_id, db)
+    photo = repository_photo.get_photo(current_user.id, photo_id, db)
     if photo is None:
         raise HTTPException(status_code=404, detail="Фотографія не знайдена")
 
@@ -196,7 +211,11 @@ async def edit_photo_description(
 
 @router.post("/create_comment", response_model=CommentResponse)
 async def create_comment(
-    comment: CommentSchema, user_id: int, photo_id: int, db: Session = Depends(get_db)
+    comment: CommentSchema,
+    user_id: int,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Creates a new comment for a specific photo.
@@ -217,7 +236,7 @@ async def create_comment(
             status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
         )
     else:
-        comment = create_comment_rep(db, user_id, photo_id, comment)
+        comment = create_comment_rep(db, current_user.id, photo_id, comment)
         return comment
 
 
@@ -228,6 +247,7 @@ async def update_comment(
     photo_id: int,
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Updates an existing comment for a specific photo.
@@ -254,7 +274,7 @@ async def update_comment(
             .filter(
                 Comment.id == comment_id,
                 Comment.photo_id == photo_id,
-                Comment.user_id == user_id,
+                Comment.user_id == current_user.id,
             )
             .first()
         )
@@ -269,7 +289,11 @@ async def update_comment(
 
 @router.delete("/{comment_id}")
 def delete_comment(
-    comment_id: int, user_id: int, photo_id: int, db: Session = Depends(get_db)
+    comment_id: int,
+    user_id: int,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Deletes a comment for a specific photo.
@@ -295,7 +319,7 @@ def delete_comment(
             .filter(
                 Comment.id == comment_id,
                 Comment.photo_id == photo_id,
-                Comment.user_id == user_id,
+                Comment.user_id == current_user.id,
             )
             .first()
         )
@@ -309,8 +333,14 @@ def delete_comment(
 
 
 # Ендпоінт видалення користувача за ID
-@router.delete("/delete-user/{user_id}", dependencies=[Depends(auth_service.require_role())])
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+@router.delete(
+    "/delete-user/{user_id}", dependencies=[Depends(auth_service.require_role())]
+)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
     """
     Deletes a user based on their unique identifier.
 
@@ -321,7 +351,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     Returns:
         dict: Confirmation message of the deleted user.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Користувача не знайдено")
 

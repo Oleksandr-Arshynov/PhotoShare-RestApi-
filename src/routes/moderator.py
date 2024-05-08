@@ -1,9 +1,8 @@
 from src.repository.comment import update_comment_rep
-from src.database.models import Photo, Comment
+from src.database.models import Photo, Comment, User
 from src.schemas.coment_schemas import (
     CommentUpdateSchema,
 )
-from typing import List
 from fastapi import (
     APIRouter,
     Depends,
@@ -15,13 +14,19 @@ from sqlalchemy.orm import Session
 from src.database.db import get_db
 from src.repository import photo as repository_photo
 from src.conf import messages
+from src.auth.dependencies_auth import auth_service
 
 
 router = APIRouter(prefix="/moderator", tags=["moderator"])
 
 
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
-async def delete_photo(request: Request, photo_id: int, db: Session = Depends(get_db)):
+async def delete_photo(
+    request: Request,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
     """
     Deletes a photo as a moderator.
 
@@ -33,9 +38,7 @@ async def delete_photo(request: Request, photo_id: int, db: Session = Depends(ge
     Returns:
         dict: The deleted photo details.
     """
-
-    user_id = 5  # Поки немає авторизації
-    photo = await repository_photo.delete_photo(user_id, photo_id, db)
+    photo = await repository_photo.delete_photo(current_user.id, photo_id, db)
 
     return photo
 
@@ -47,6 +50,7 @@ async def update_comment(
     photo_id: int,
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
 ):
     """
     Updates an existing comment for a specific photo as a moderator.
@@ -73,7 +77,7 @@ async def update_comment(
             .filter(
                 Comment.id == comment_id,
                 Comment.photo_id == photo_id,
-                Comment.user_id == user_id,
+                Comment.user_id == current_user.id,
             )
             .first()
         )

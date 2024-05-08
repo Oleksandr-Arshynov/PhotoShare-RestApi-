@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, Request, status
 
 from src.database.db import get_db
+from src.database.models import User
 from src.repository import photo as repository_photo
 from src.conf.config import settings
+from src.auth.dependencies_auth import auth_service
 
 
 router = APIRouter(prefix="/transformation_photo", tags=["transformation_photo"])
@@ -23,7 +25,7 @@ USER_ID = 5
 
 @router.post("/cartoon/{photo_id}", status_code=status.HTTP_200_OK)
 async def cartoon_transformation_photo(
-    request: Request, photo_id: int, db: Session = Depends(get_db)
+    request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
 ):
     """
     Apply cartoon transformation to a photo.
@@ -36,8 +38,8 @@ async def cartoon_transformation_photo(
     Returns:
         dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
     """
-    user_id = USER_ID  # Тимчасово, доки немає автентифікації
-    photo = await repository_photo.get_photo(user_id, photo_id, db)
+
+    photo = await repository_photo.get_photo(current_user.id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
     original_image = cloudinary.uploader.upload(photo.photo)
@@ -56,12 +58,12 @@ async def cartoon_transformation_photo(
     db.commit()
 
     filename = await repository_photo.create_qr_code(
-        url=photo.transformation_url_cartoon, user_id=user_id, photo_id=photo_id
+        url=photo.transformation_url_cartoon, user_id=current_user.id, photo_id=photo_id
     )
     if filename != "":
         if photo.qr_url_cartoon:
             result = await repository_photo.delete_qr_code(
-                filename=photo.qr_url_cartoon, user_id=user_id, photo_id=photo_id
+                filename=photo.qr_url_cartoon, user_id=current_user.id, photo_id=photo_id
             )
             if result:
                 photo.qr_url_cartoon = filename
@@ -78,7 +80,7 @@ async def cartoon_transformation_photo(
 
 @router.post("/grayscale/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_grayscale(
-    request: Request, photo_id: int, db: Session = Depends(get_db)
+    request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
 ):
     """
     Apply grayscale transformation to a photo.
@@ -91,7 +93,7 @@ async def transformation_photo_grayscale(
     Returns:
         dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
     """
-    user_id = USER_ID  # Тимчасово, доки немає автентифікації
+    user_id = current_user.id # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -131,7 +133,7 @@ async def transformation_photo_grayscale(
 
 @router.post("/face/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_face(
-    request: Request, photo_id: int, db: Session = Depends(get_db)
+    request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
 ):
     """
     Apply face transformation to a photo.
@@ -144,7 +146,7 @@ async def transformation_photo_face(
     Returns:
         dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
     """
-    user_id = USER_ID  # Тимчасово, доки немає автентифікації
+    user_id = current_user.id  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -189,7 +191,7 @@ async def transformation_photo_face(
 
 @router.post("/tilt/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_tilt(
-    request: Request, photo_id: int, db: Session = Depends(get_db)
+    request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
 ):
     """
     Apply tilt transformation to a photo.
@@ -202,7 +204,7 @@ async def transformation_photo_tilt(
     Returns:
         dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
     """
-    user_id = USER_ID  # Тимчасово, доки немає автентифікації
+    user_id = current_user.id  # Тимчасово, доки немає автентифікації
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary

@@ -66,7 +66,7 @@ class Auth:
 
         user = (
             db.query(models.User)
-            .filter(models.User.username == email)
+            .filter(models.User.email == email)
             .first()
         )
         if user is None:
