@@ -28,41 +28,41 @@ def create_static(session):
     except Exception:
         ...
 
-    try:
-        create_admin = User(
-        username="Admin",
-        email="Admin@gmail.com", 
-        hashed_password="qwerty", 
-        avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0cFYTSmgeLGCEAApBVBVkVcxe2COuA2sYja0IUfwe0w&s", 
-        role_id=session.query(Role).filter(Role.role=="Admin").first().id
-        )
+    # try:
+    #     create_admin = User(
+    #     username="Admin",
+    #     email="Admin@gmail.com", 
+    #     hashed_password="qwerty", 
+    #     avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0cFYTSmgeLGCEAApBVBVkVcxe2COuA2sYja0IUfwe0w&s", 
+    #     role_id=session.query(Role).filter(Role.role=="Admin").first().id
+    #     )
 
-        session.add(create_admin)
-        session.commit()
+    #     session.add(create_admin)
+    #     session.commit()
 
-        create_moderator = User(
-            username="Moderator", 
-            email="Moderator@gmail.com", 
-            hashed_password="qwerty", 
-            avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfhs8u11hfQyBqgGQSp_lWzoHkcSIjm6KGDC0gg567yg&s", 
-            role_id=session.query(Role).filter(Role.role=="Moderator").first().id
-        )
+    #     create_moderator = User(
+    #         username="Moderator", 
+    #         email="Moderator@gmail.com", 
+    #         hashed_password="qwerty", 
+    #         avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfhs8u11hfQyBqgGQSp_lWzoHkcSIjm6KGDC0gg567yg&s", 
+    #         role_id=session.query(Role).filter(Role.role=="Moderator").first().id
+    #     )
 
-        session.add(create_moderator)
-        session.commit()
+    #     session.add(create_moderator)
+    #     session.commit()
 
-        create_user = User(
-            username="User", 
-            email="User@gmail.com", 
-            hashed_password="qwerty", 
-            avatar="https://static6.depositphotos.com/1001599/647/i/450/depositphotos_6477379-stock-photo-fire-letters-a-z.jpg", 
-            role_id=session.query(Role).filter(Role.role=="User").first().id
-        )
+    #     create_user = User(
+    #         username="User", 
+    #         email="User@gmail.com", 
+    #         hashed_password="qwerty", 
+    #         avatar="https://static6.depositphotos.com/1001599/647/i/450/depositphotos_6477379-stock-photo-fire-letters-a-z.jpg", 
+    #         role_id=session.query(Role).filter(Role.role=="User").first().id
+    #     )
         
-        session.add(create_user)
-        session.commit()
-    except Exception:
-        ...
+    #     session.add(create_user)
+    #     session.commit()
+    # except Exception:
+    #     ...
 
 @pytest.fixture(scope="module")
 def session():
@@ -151,6 +151,47 @@ def token_admin(client, user_admin, session):
     )
     data = response.json()
     return data["access_token"]
+
+
+@pytest.fixture()
+def token_moderator(client, user_moderator, session):
+    client.post("/api/auth/signup", json={
+                                          "username": user_moderator["username"],
+                                          "password": user_moderator["hashed_password"],
+                                          "email": user_moderator["email"]
+                                          }
+    )
+
+    current_user: User = session.query(User).filter(User.email == user_moderator["email"]).first()
+    current_user.confirmed = True
+    session.commit()
+    response = client.post(
+        "/api/auth/login",
+        data={"username": user_moderator["email"], "password": user_moderator["hashed_password"]},
+    )
+    data = response.json()
+    return data["access_token"]
+
+
+@pytest.fixture()
+def token_user(client, user_user, session):
+    client.post("/api/auth/signup", json={
+                                          "username": user_user["username"],
+                                          "password": user_user["hashed_password"],
+                                          "email": user_user["email"]
+                                          }
+    )
+
+    current_user: User = session.query(User).filter(User.email == user_user["email"]).first()
+    current_user.confirmed = True
+    session.commit()
+    response = client.post(
+        "/api/auth/login",
+        data={"username": user_user["email"], "password": user_user["hashed_password"]},
+    )
+    data = response.json()
+    return data["access_token"]
+
 
 # python -m pytest --cov .
 

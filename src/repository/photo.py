@@ -38,7 +38,7 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
     public_id = response["public_id"]
     
     photo = Photo(photo=photo_url, description=description, user_id=user_id, public_id=public_id)
-    
+    logger.critical(photo)
     if photo: # перевіряє що photo вдало створено
         db.add(photo)
         db.commit()
@@ -50,8 +50,12 @@ async def create_photo(user_id: int, file: UploadFile, description: str, tags: l
         for num in range(0, len(tags)): # без цього не повертає теги 
             photo.tags[num].name
 
-    return photo 
-
+        return db.query(Photo).filter(Photo.id==photo.id).first()
+    else:
+        cloudinary.uploader.destroy(photo.public_id)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Photo no created"
+        )
 
 
 async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: str, tags: list, db: Session) -> Tag:
@@ -72,6 +76,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
+        logger.critical(file)
         if file != None:
             contents = await file.read()
             # Видаляємо файл в Cloudinary
@@ -95,7 +100,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
 
         post_photo.updated_at = datetime.now() # дата редагування
 
-    return post_photo
+    return db.query(Photo).filter(and_(Photo.user_id==user_id, Photo.id==photo_id)).first()
 
 
 
