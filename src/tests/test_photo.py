@@ -1,5 +1,5 @@
 from src.tests.logger import logger  
-from src.database.models import User, Photo, Role, Tag
+from src.database.models import Photo
 
 filename = "photo.jpg"
 new_filename = "new_photo.jpg"
