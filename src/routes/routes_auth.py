@@ -1,4 +1,3 @@
-
 import fastapi
 import fastapi.security
 from src.tests.logger import logger
@@ -18,6 +17,16 @@ async def create_user(
     request: fastapi.Request,
     db=fastapi.Depends(get_db),
 ):
+    """
+    Create a new user.
+
+    - **username**: The username of the user.
+    - **email**: The email of the user.
+    - **password**: The password of the user.
+
+    Returns:
+      - **User**: The created user.
+    """
     user = await auth_service.get_user_by_email(body.email, db)
     if user:
         raise fastapi.HTTPException(status_code=409, detail="User already exists")
@@ -38,17 +47,22 @@ async def login(
     body: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends(),
     db=fastapi.Depends(get_db),
 ) -> schemas_auth.Token:
-    user = (
-        db.query(models.User)
-        .filter(models.User.email == body.username)
-        .first()
-    )
+    """
+    Login to the application.
+
+    - **email**: The email of the user.
+    - **password**: The password of the user.
+
+    Returns:
+      - **Token**: The access token and refresh token.
+    """
+    user = db.query(models.User).filter(models.User.email == body.username).first()
     if not user:
         raise fastapi.HTTPException(status_code=401, detail="User not found")
     if not user:
         logger.critical(user.hashed_password)
         logger.critical(body.password)
-        
+
         raise fastapi.HTTPException(status_code=401, detail="User not confirmed")
     verification = auth_service.verify_password(body.password, user.hashed_password)
     if not verification:
@@ -81,13 +95,17 @@ async def refresh_token(
     ),
     db=fastapi.Depends(get_db),
 ):
+    """
+    Refresh access token.
+
+    - **Authorization**: The bearer token.
+
+    Returns:
+      - **Token**: The new access token and refresh token.
+    """
     token = credentials.credentials
     username = await auth_service.decode_refresh_token(token)
-    user = (
-        db.query(models.User)
-        .filter(models.User.refresh_token == token)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.refresh_token == token).first()
     if user.refresh_token != token:
         await auth_service.update_token(user, new_token=None, db=db)
         raise fastapi.HTTPException(status_code=400, detail="Invalid token")
@@ -101,9 +119,3 @@ async def refresh_token(
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
-
-
-
-
-
-
