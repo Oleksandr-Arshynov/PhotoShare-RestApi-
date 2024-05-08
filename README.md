@@ -19,9 +19,9 @@
     cd src
     ```
 
-4. Perform migration:
+4. Run the container:
     ```
-    alembic revision --autogenerate -m 'Init'
+    docker-compose up
     ```
 
 5. Apply changes:
@@ -29,9 +29,9 @@
     alembic upgrade head
     ```
 
-6. Run the container:
+6. Perform migration:
     ```
-    docker-compose up
+    alembic revision --autogenerate -m 'Init'
     ```
 
 7. Run the server:
