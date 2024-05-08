@@ -26,20 +26,36 @@ async def create_user(
 
     Returns:
       - **User**: The created user.
+
+    If the first user registers, they are assigned the role of admin.
+    If the second user registers, they are assigned the role of moderator.
+    For subsequent registrations, users are assigned the role of regular users.
     """
+    total_users = db.query(models.User).count()
+    if total_users == 0:
+        role_id = 1  # Admin
+    elif total_users == 1:
+        role_id = 2  # Moderator
+    else:
+        role_id = 3  # Regular User
+
     user = await auth_service.get_user_by_email(body.email, db)
     if user:
         raise fastapi.HTTPException(status_code=409, detail="User already exists")
 
     hashed_password = auth_service.get_password_hash(body.password)
     new_user = models.User(
-        username=body.username, email=body.email, hashed_password=hashed_password
+        username=body.username,
+        email=body.email,
+        hashed_password=hashed_password,
+        role_id=role_id,
     )
 
     db.add(new_user)
     db.commit()
 
     return new_user
+
 
 
 @router.post("/login")
