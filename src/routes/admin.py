@@ -63,11 +63,16 @@ async def create_upload_photo(
     Returns:
         dict: The uploaded photo details.
     """
-
-    tags = await repository_tags.editing_tags(tags)
-    photo = await repository_photo.create_photo(
-        current_user.id, file, description, tags, db
-    )
+    if current_user.role_id == 1:
+        tags = await repository_tags.editing_tags(tags)
+        photo = await repository_photo.create_photo(
+            current_user.id, file, description, tags, db
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     return photo
 
 
@@ -95,10 +100,16 @@ async def put_photo(
     Returns:
         dict: The updated photo details.
     """
-    tags = await repository_tags.editing_tags(tags)
-    photo = await repository_photo.put_photo(
-        current_user.id, photo_id, file, description, tags, db
-    )
+    if current_user.role_id == 1:
+        tags = await repository_tags.editing_tags(tags)
+        photo = await repository_photo.put_photo(
+            current_user.id, photo_id, file, description, tags, db
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     return photo
 
 
@@ -120,8 +131,13 @@ async def delete_photo(
     Returns:
         dict: The deleted photo details.
     """
-    photo = await repository_photo.delete_photo(current_user.id, photo_id, db)
-
+    if current_user.role_id == 1:
+        photo = await repository_photo.delete_photo(current_user.id, photo_id, db)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     return photo
 
 
@@ -141,7 +157,13 @@ async def get_photos(
     Returns:
         List[dict]: List of photo details.
     """
-    photo = await repository_photo.get_photos(current_user.id, db)
+    if current_user.role_id == 1:
+        photo = await repository_photo.get_photos(current_user.id, db)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     return photo
 
 
@@ -163,7 +185,13 @@ async def get_photo(
     Returns:
         dict: The photo details.
     """
-    photo = await repository_photo.get_photo(current_user.id, photo_id, db)
+    if current_user.role_id == 1:
+        photo = await repository_photo.get_photo(current_user.id, photo_id, db)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     return photo
 
 
@@ -187,23 +215,29 @@ async def edit_photo_description(
     Returns:
         dict: The updated photo details.
     """
-    # Перевіряємо, чи існує фотографія з вказаним ID
-    photo = repository_photo.get_photo(current_user.id, photo_id, db)
-    if photo is None:
-        raise HTTPException(status_code=404, detail="Фотографія не знайдена")
+    if current_user.role_id == 1:
+        # Перевіряємо, чи існує фотографія з вказаним ID
+        photo = repository_photo.get_photo(current_user.id, photo_id, db)
+        if photo is None:
+            raise HTTPException(status_code=404, detail="Фотографія не знайдена")
 
-    # Оновлюємо опис фотографії в базі даних
-    photo = repository_photo.update_photo_description(photo_id, new_description, db)
+        # Оновлюємо опис фотографії в базі даних
+        photo = repository_photo.update_photo_description(photo_id, new_description, db)
 
-    # Оновлюємо опис фотографії в Cloudinary
-    try:
-        repository_photo.update_cloudinary_metadata(photo.public_id, new_description)
-    except Exception as e:
-        # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
-        repository_photo.rollback_photo_description(photo_id, db)
+        # Оновлюємо опис фотографії в Cloudinary
+        try:
+            repository_photo.update_cloudinary_metadata(photo.public_id, new_description)
+        except Exception as e:
+            # Відкатити зміни в базі даних, якщо виникла помилка в Cloudinary
+            repository_photo.rollback_photo_description(photo_id, db)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
+            )
+    else:
         raise HTTPException(
-            status_code=500,
-            detail=f"Помилка під час оновлення опису фотографії в Cloudinary: {str(e)}",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
         )
 
     return photo
@@ -229,15 +263,20 @@ async def create_comment(
     Returns:
         dict: The created comment details.
     """
-
-    photo = db.query(Photo).filter(Photo.id == photo_id).first()
-    if not photo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
-        )
+    if current_user.role_id == 1:
+        photo = db.query(Photo).filter(Photo.id == photo_id).first()
+        if not photo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
+            )
+        else:
+            comment = create_comment_rep(db, current_user.id, photo_id, comment)
     else:
-        comment = create_comment_rep(db, current_user.id, photo_id, comment)
-        return comment
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
+    return comment
 
 
 @router.put("/{comment_id}")
@@ -262,28 +301,33 @@ async def update_comment(
     Returns:
         dict: The updated comment details.
     """
-
-    photo = db.query(Photo).filter(Photo.id == photo_id).first()
-    if not photo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
-        )
-    else:
-        comment = (
-            db.query(Comment)
-            .filter(
-                Comment.id == comment_id,
-                Comment.photo_id == photo_id,
-                Comment.user_id == current_user.id,
-            )
-            .first()
-        )
-        if not comment:
+    if current_user.role_id == 1:
+        photo = db.query(Photo).filter(Photo.id == photo_id).first()
+        if not photo:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
             )
-
-        comment = update_comment_rep(db, comment_id, updated_comment)
+        else:
+            comment = (
+                db.query(Comment)
+                .filter(
+                    Comment.id == comment_id,
+                    Comment.photo_id == photo_id,
+                    Comment.user_id == current_user.id,
+                )
+                .first()
+            )
+            if not comment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+                )
+    
+            comment = update_comment_rep(db, comment_id, updated_comment)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
         return comment
 
 
@@ -307,28 +351,33 @@ def delete_comment(
     Returns:
         dict: The deleted comment details.
     """
-
-    photo = db.query(Photo).filter(Photo.id == photo_id).first()
-    if not photo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
-        )
-    else:
-        comment = (
-            db.query(Comment)
-            .filter(
-                Comment.id == comment_id,
-                Comment.photo_id == photo_id,
-                Comment.user_id == current_user.id,
-            )
-            .first()
-        )
-        if not comment:
+    if current_user.role_id == 1:
+        photo = db.query(Photo).filter(Photo.id == photo_id).first()
+        if not photo:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
             )
+        else:
+            comment = (
+                db.query(Comment)
+                .filter(
+                    Comment.id == comment_id,
+                    Comment.photo_id == photo_id,
+                    Comment.user_id == current_user.id,
+                )
+                .first()
+            )
+            if not comment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+                )
 
-        comment = delete_comment_rep(db, photo_id, comment_id)
+            comment = delete_comment_rep(db, photo_id, comment_id)
+    else: 
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
         return comment
 
 
@@ -351,10 +400,15 @@ def delete_user(
     Returns:
         dict: Confirmation message of the deleted user.
     """
-    user = db.query(User).filter(User.id == current_user.id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Користувача не знайдено")
-
+    if current_user.role_id == 1:
+        user = db.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Користувача не знайдено")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=messages.ACCESS_FORBIDDEN,
+        )
     db.delete(user)
     db.commit()
 
