@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock
 from src.database.models import User, Role
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -91,7 +92,7 @@ def client(session):
 
 
 @pytest.fixture(scope="module")
-def admin_user():
+def user_admin():
     admin = {
         "id": 1,
         "username": "Admin", 
@@ -105,7 +106,7 @@ def admin_user():
 
 
 @pytest.fixture(scope="module")
-def moderator_user():
+def user_moderator():
     moderator = {
         "id": 2,
         "username": "Moderator", 
@@ -130,6 +131,26 @@ def user_user():
         "role_id": "User"
         }
     return user
+
+
+@pytest.fixture()
+def token_admin(client, user_admin, session):
+    client.post("/api/auth/signup", json={
+                                          "username": user_admin["username"],
+                                          "password": user_admin["hashed_password"],
+                                          "email": user_admin["email"]
+                                          }
+    )
+
+    current_user: User = session.query(User).filter(User.email == user_admin["email"]).first()
+    current_user.confirmed = True
+    session.commit()
+    response = client.post(
+        "/api/auth/login",
+        data={"username": user_admin["email"], "password": user_admin["hashed_password"]},
+    )
+    data = response.json()
+    return data["access_token"]
 
 # python -m pytest --cov .
 

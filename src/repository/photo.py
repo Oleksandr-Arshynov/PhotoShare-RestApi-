@@ -9,8 +9,8 @@ from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
 from src.conf.config import settings
 from src.repository import tags as repository_tag
-from src.database.models import Tag, Photo, PhotoTagAssociation, User
-
+from src.database.models import Tag, Photo, PhotoTagAssociation, User, Comment
+from src.tests.logger import logger
 
 
 
@@ -72,8 +72,7 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
-
-        if file.filename and file.filename != "upload":
+        if file != None:
             contents = await file.read()
             # Видаляємо файл в Cloudinary
             cloudinary.uploader.destroy(post_photo.public_id)
@@ -109,12 +108,20 @@ async def delete_photo(user_id: int, photo_id: int, db: Session) -> Photo | HTTP
             shutil.rmtree(f"src/static/users/{user_id}/{photo_id}") # видалення qr
         except:
             ...
+
+        comments = db.query(Comment).filter(Comment.photo_id==photo.id).all() # Видалення коментарів
+        for comment in comments:
+            db.delete(comment) 
+        db.commit()
+
         tags = await repository_tag.get_tags(photo_id=photo.id, db=db)
         db.delete(photo) 
         db.commit()
+
         user = db.query(User).filter(User.id==photo.user_id).first()
         user.number_of_photos -= 1
         db.commit()
+
         for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
             photo.tags[num].name
         
