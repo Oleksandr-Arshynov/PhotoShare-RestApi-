@@ -26,7 +26,7 @@ from src.conf.config import settings
 import cloudinary.uploader
 from src.conf import messages
 from src.schemas.user_schemas import UserCreate
-
+from src.tests.logger import logger  
 
 
 router = APIRouter(prefix="/photo", tags=["photo"])
@@ -107,9 +107,9 @@ async def put_photo(
     Status Codes:
     - 200: Photo updated successfully.
     """
+    # tags = await repository_tags.get_tags(photo_id, db)
 
-    tags = await repository_tags.get_tags(photo_id, db)
-    
+    tags = await repository_tags.editing_tags(tags)
     photo = await repository_photo.put_photo(
         current_user.id, photo_id, file, description, tags, db
     )
