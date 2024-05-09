@@ -73,7 +73,7 @@ async def cartoon_transformation_photo(
     return {
         "transformed_image_url": transformed_image["secure_url"],
         "original_image_url": original_image["secure_url"],
-        "filename": photo.qr_url_cartoon,
+        "filename": photo.qr_url_cartoon
     }
 
 

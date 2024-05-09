@@ -8,4 +8,4 @@ CONTACT_NOT_FOUND = "Contact not found"
 COMMENT_NOT_FOUND = "Comment not found"
 ACCESS_FORBIDDEN = "Access forbidden"
 CONTACT_NUMBER_EMAIL_EXISTS = "Contact with the mentioned email or contact number already exists"
-ACCESS_TOKEN_EXPIRE_MINUTES= 15
+ACCESS_TOKEN_EXPIRE_MINUTES= 30
