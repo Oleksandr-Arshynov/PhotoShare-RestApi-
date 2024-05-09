@@ -54,7 +54,7 @@ async def create_user(
     db.add(new_user)
     db.commit()
 
-    return new_user
+    return f"(User {new_user.email} created)"
 
 
 
