@@ -5,14 +5,13 @@ from src.database.db import get_db
 from src.database.models import User
 from src.repository import user as repository_user
 from src.auth.dependencies_auth import auth_service
-
+from src.tests.logger import logger
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-
+# OK
 @router.get("")
 async def get_me_info(
-    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
 ):
@@ -38,9 +37,9 @@ async def get_me_info(
     return user
 
 
+# OK
 @router.post("/{username}")
 async def get_user_info(
-    request: Request,
     username: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),

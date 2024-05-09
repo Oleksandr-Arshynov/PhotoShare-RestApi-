@@ -20,9 +20,8 @@ cloudinary.config(
     api_secret=settings.CLD_API_SECRET,
 )
 
-USER_ID = 5
 
-
+# OK
 @router.post("/cartoon/{photo_id}", status_code=status.HTTP_200_OK)
 async def cartoon_transformation_photo(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -78,6 +77,7 @@ async def cartoon_transformation_photo(
     }
 
 
+# OK
 @router.post("/grayscale/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_grayscale(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -131,6 +131,7 @@ async def transformation_photo_grayscale(
     }
 
 
+# OK
 @router.post("/face/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_face(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -189,6 +190,7 @@ async def transformation_photo_face(
     }
 
 
+# OK
 @router.post("/tilt/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_tilt(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)

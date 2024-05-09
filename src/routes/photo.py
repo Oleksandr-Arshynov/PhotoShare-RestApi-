@@ -26,7 +26,7 @@ from src.conf.config import settings
 import cloudinary.uploader
 from src.conf import messages
 from src.schemas.user_schemas import UserCreate
-from src.tests.logger import logger
+
 
 
 router = APIRouter(prefix="/photo", tags=["photo"])
@@ -39,6 +39,7 @@ cloudinary.config(
 )
 
 
+# OK
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_photo(
     file: UploadFile = File(...),
@@ -74,9 +75,9 @@ async def create_photo(
     return photo
 
 
+# OK
 @router.put("/{photo_id}", status_code=status.HTTP_200_OK)
 async def put_photo(
-    request: Request,
     photo_id: int,
     file: UploadFile = File(None),
     description: str = Form(None),
@@ -84,6 +85,7 @@ async def put_photo(
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
 ):
+
     """
     UPDATE PHOTO
 
@@ -113,10 +115,9 @@ async def put_photo(
     )
     return photo
 
-
+# OK
 @router.delete("/{photo_id}", status_code=status.HTTP_200_OK)
 async def delete_photo(
-    request: Request,
     photo_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
@@ -146,10 +147,9 @@ async def delete_photo(
 
     return photo
 
-
+# OK
 @router.get("", status_code=status.HTTP_200_OK)
 async def get_photos(
-    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
 ):
@@ -171,10 +171,9 @@ async def get_photos(
     photo = await repository_photo.get_photos(current_user.id, db)
     return photo
 
-
+# OK
 @router.get("/{photo_id}", status_code=status.HTTP_200_OK)
 async def get_photo(
-    request: Request,
     photo_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
@@ -199,6 +198,101 @@ async def get_photo(
     """
     photo = await repository_photo.get_photo(current_user.id, photo_id, db)
     return photo
+
+
+# OK
+@router.post("/create_comment", response_model=CommentResponse)
+async def create_comment(
+    comment: CommentSchema,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
+    """
+    CREATE COMMENT
+
+    Method: POST
+    URL: /photo/create_comment
+
+    Description:
+    This endpoint allows a user to create a comment on a photo.
+
+    Parameters:
+    - comment (CommentSchema, body, required): The comment object containing the user's comment details.
+    - user_id (int, body, required): The ID of the user creating the comment.
+    - photo_id (int, body, required): The ID of the photo on which the comment is being created.
+
+    Response:
+    Returns the created comment object.
+
+    Status Codes:
+    - 200: Comment created successfully.
+    """
+
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
+        )
+    else:
+        comment = create_comment_rep(db, current_user.id, photo_id, comment)
+        return comment
+
+# OK
+@router.put("/{photo_id}/{comment_id}")
+async def update_comment(
+    updated_comment: CommentUpdateSchema,
+    comment_id: int,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_service.get_current_user),
+):
+    """
+    UPDATE COMMENT
+
+    Method: PUT
+    URL: /photo/{comment_id}
+
+    Description:
+    This endpoint allows a user to update their comment on a photo.
+
+    Parameters:
+    - updated_comment (CommentUpdateSchema, body, required): The updated comment object.
+    - comment_id (int, path, required): The ID of the comment to be updated.
+    - photo_id (int, body, required): The ID of the photo on which the comment is being updated.
+    - user_id (int, body, required): The ID of the user who owns the comment.
+
+    Response:
+    Returns the updated comment object.
+
+    Status Codes:
+    - 200: Comment updated successfully.
+    """
+
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
+        )
+    else:
+        comment = (
+            db.query(Comment)
+            .filter(
+                Comment.id == comment_id,
+                Comment.photo_id == photo_id,
+                Comment.user_id == current_user.id,
+            )
+            .first()
+        )
+        if not comment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
+            )
+
+        comment = update_comment_rep(db, comment_id, updated_comment)
+        return comment
+
+
 
 
 @router.put("/edit_photo_description/{user_id}/{photo_id}")
