@@ -107,8 +107,7 @@ async def put_photo(
     Status Codes:
     - 200: Photo updated successfully.
     """
-
-    tags = await repository_tags.get_tags(photo_id, db)
+    
     
     photo = await repository_photo.put_photo(
         current_user.id, photo_id, file, description, tags, db

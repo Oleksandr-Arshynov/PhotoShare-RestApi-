@@ -80,13 +80,13 @@ def test_put_photo(client, session, token_user):
 
 # OK
 def test_put_photo_no_file(client, session, token_user):
-    photo = session.query(Photo).filter(Photo.id==2).first()
+    photo = session.query(Photo).filter(Photo.id == 2).first()
     tags = [tag.name for tag in photo.tags] 
     public_id = photo.public_id
     response = client.put(
         f"/api/photo/{2}",
         files=None,
-        data={"description": "new", "tags": ["6,7,8,9,10"]},
+        data={"description": "new", "tags": [6, 7, 8, 9, 10]},
         headers={"Authorization": f"Bearer {token_user}"}
     )
 
@@ -97,6 +97,7 @@ def test_put_photo_no_file(client, session, token_user):
     assert data["description"] == "new"
     assert data["public_id"] == public_id
     assert [tag["name"] for tag in data["tags"]] != tags
+
 
 
 # OK

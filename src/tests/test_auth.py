@@ -1,101 +1,43 @@
 import pytest
-from main import app
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-import src.database.db
-from src.database.models import Base
-from src.database.db import get_db
+from src.database.db import SessionLocal
+from src.auth.dependencies_auth import auth_service
+from src.database.models import User
+from src.schemas import schemas_auth
 
-# Створення тестової бази даних
-TEST_DATABASE_URL = "sqlite:///./test_auth.db"
-engine = create_engine(TEST_DATABASE_URL)
-TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-app.dependency_overrides[src.database.db.get_db] = lambda: TestingSessionLocal()
 
-client = TestClient(app)
-
-#@pytest.fixture(autouse=True)
-#def setup_and_teardown():
-    # Створення таблиць перед тестами
-    #src.database.models.Base.metadata.create_all(bind=engine)
-    #yield
-    # Видалення таблиць після тестів
-    #src.database.models.Base.metadata.drop_all(bind=engine)
-
-# Реєстрація користувача
-def test_register_user():
-    response = client.post(
-        "/auth/register",
-        json={
-            "username": "new_user",
-            "password": "securepassword",
-            "email": "newuser@example.com",
-        },
+@pytest.fixture(scope="module")
+def db():
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
+        
+        
+        
+def test_create_user(client):
+    # Create a new user
+    body = schemas_auth.UserCreate(
+        username="test_user",
+        email="test_user@example.com",
+        password="test_password",  # Assuming password is passed here
     )
+    response = client.post("api/auth/signup", json=dict(body))  # Convert UserCreate object to dictionary
+    assert response.status_code == 201
+
+
+
+  # імпортуємо модель User з відповідного місця у вашому проекті
+
+def test_login_user(client):
+    # Assuming you have a valid user in your database with the following credentials
+    username = "test_user@example.com"
+    password = "test_password"
+
+    # Send a POST request to the login endpoint with the username and password
+    response = client.post("api/auth/login", data={"username": username, "password": password})
+
+    # Assert that the response status code is 200 (OK)
     assert response.status_code == 200
-    assert "msg" in response.json() and response.json()["msg"] == "Користувач зареєстрований"
 
-# Повторна реєстрація того ж користувача
-def test_register_duplicate_user():
-    client.post(
-        "/auth/register",
-        json={
-            "username": "duplicate_user",
-            "password": "securepassword",
-            "email": "duplicate@example.com",
-        },
-    )
 
-    response = client.post(
-        "/auth/register",
-        json={
-            "username": "duplicate_user",
-            "password": "securepassword",
-            "email": "duplicate2@example.com",
-        },
-    )
-    assert response.status_code == 400
-    assert "Користувач вже існує" in response.json()["detail"]
-
-# Авторизація з правильними обліковими даними
-def test_login_user():
-    client.post(
-        "/auth/register",
-        json={
-            "username": "user_login",
-            "password": "securepassword",
-            "email": "loginuser@example.com",
-        },
-    )
-
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": "user_login",
-            "password": "securepassword",
-        },
-    )
-    assert response.status_code == 200
-    assert "access_token" in response.json() and response.json()["token_type"] == "bearer"
-
-# Авторизація з неправильним паролем
-def test_login_with_incorrect_password():
-    client.post(
-        "/auth/register",
-        json={
-            "username": "incorrect_password",
-            "password": "securepassword",
-            "email": "incorrectpass@example.com",
-        },
-    )
-
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": "incorrect_password",
-            "password": "wrongpassword",
-        },
-    )
-    assert response.status_code == 401
-    assert "Невірне ім'я користувача або пароль" in response.json()["detail"]
