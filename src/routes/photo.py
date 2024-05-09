@@ -297,7 +297,6 @@ async def update_comment(
 
 @router.put("/edit_photo_description/{user_id}/{photo_id}")
 async def edit_photo_description(
-    user_id: int,
     photo_id: int,
     new_description: str,
     db: Session = Depends(get_db),
