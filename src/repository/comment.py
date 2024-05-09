@@ -23,6 +23,7 @@ def create_comment_rep(db: Session,user_id: int,photo_id: int, comment: CommentS
 
 def update_comment_rep(db: Session, comment_id: int, updated_comment: CommentUpdateSchema) :
     comment_to_update = db.query(Comment).filter(Comment.id == comment_id).first()
+    print(comment_to_update)
     comment_to_update.comment = updated_comment.comment
     db.commit()
     db.refresh(comment_to_update)

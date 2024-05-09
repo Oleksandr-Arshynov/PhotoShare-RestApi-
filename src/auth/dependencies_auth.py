@@ -8,10 +8,6 @@ from sqlalchemy import select
 from src.database.db import get_db
 import src.database.models as models
 
-from pathlib import Path
-
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from fastapi_mail.errors import ConnectionErrors
 from sqlalchemy.orm import Session
 
 from src.tests.logger import logger

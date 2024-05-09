@@ -1,6 +1,6 @@
 from src.auth.dependencies_auth import auth_service
 from src.repository.comment import create_comment_rep, update_comment_rep
-from src.database.models import Photo, Comment, User
+from src.database.models import Photo, Comment, PhotoTagAssociation, User
 from src.schemas.coment_schemas import (
     CommentResponse,
     CommentSchema,
@@ -106,11 +106,11 @@ async def put_photo(
     - 200: Photo updated successfully.
     """
 
-    tags = await repository_tags.editing_tags(tags)
+    tags = await repository_tags.get_tags(photo_id, db)
+    
     photo = await repository_photo.put_photo(
         current_user.id, photo_id, file, description, tags, db
     )
-    logger.critical(photo.photo)
     return photo
 
 
@@ -139,6 +139,9 @@ async def delete_photo(
     Status Codes:
     - 200: Photo deleted successfully.
     """
+    db.query(PhotoTagAssociation).filter(PhotoTagAssociation.photo_id == photo_id).delete()
+    db.query(Comment).filter(Comment.photo_id == photo_id).delete()
+    db.commit()
     photo = await repository_photo.delete_photo(current_user.id, photo_id, db)
 
     return photo
@@ -251,7 +254,6 @@ async def edit_photo_description(
 @router.post("/create_comment", response_model=CommentResponse)
 async def create_comment(
     comment: CommentSchema,
-    user_id: int,
     photo_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
@@ -292,7 +294,6 @@ async def update_comment(
     updated_comment: CommentUpdateSchema,
     comment_id: int,
     photo_id: int,
-    user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_service.get_current_user),
 ):
@@ -319,6 +320,7 @@ async def update_comment(
     """
 
     photo = db.query(Photo).filter(Photo.id == photo_id).first()
+   
     if not photo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=messages.PHOTO_NOT_FOUND
@@ -333,10 +335,11 @@ async def update_comment(
             )
             .first()
         )
+        print(comment)
         if not comment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=messages.COMMENT_NOT_FOUND
             )
 
         comment = update_comment_rep(db, comment_id, updated_comment)
-        return comment
+    return comment

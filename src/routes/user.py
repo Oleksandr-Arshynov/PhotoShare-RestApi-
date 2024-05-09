@@ -64,7 +64,7 @@ async def get_user_info(
     - 200: User information retrieved successfully.
     - 404: Username not found.
     """
-    user = await repository_user.get_username(current_user.id, username, db)
+    user = await repository_user.get_username(username, db)
     if user == None:
         raise HTTPException(status_code=404, detail="Username not found")
     return user

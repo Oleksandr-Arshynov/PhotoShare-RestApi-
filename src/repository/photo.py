@@ -72,7 +72,8 @@ async def put_photo(user_id: int, photo_id: int, file: UploadFile, description: 
 
             for num in range(0, len(tags)): # без цього не повертає теги, а просто {} або взягалі нічого
                 post_photo.tags[num].name
-
+                
+            
         if file.filename and file.filename != "upload":
             contents = await file.read()
             # Видаляємо файл в Cloudinary
