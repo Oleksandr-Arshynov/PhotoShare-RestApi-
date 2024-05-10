@@ -214,3 +214,5 @@ Deletes a user based on their unique identifier.
   - `schemas/`: Directory with schema
   - `tests/`: Directory containing tests
 - `pyproject.toml`: Poetry configuration file containing project dependencies.
+  
+![обкладинка](_976a83bc-4d8c-4c9b-be53-32bd352b782b.jpeg)
