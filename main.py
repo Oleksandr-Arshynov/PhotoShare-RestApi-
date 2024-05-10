@@ -22,52 +22,14 @@ app.include_router(routes_user.router, prefix="/api")
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def static(request: Request, db: Session = Depends(get_db)):
-    try:
-        # create role
-        roles = ["Admin", "Moderator", "User"]
-        for role_name in roles:
-            existing_role = db.query(Role).filter(Role.role == role_name).first()
-            if not existing_role:
-                db.add(Role(role=role_name))
-        db.commit()
-
-        admin = User(
-            username="Admin",
-            email="Admin@gmail.com",
-            hashed_password=routes_auth.get_password_hash("qwerty"),
-            avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0cFYTSmgeLGCEAApBVBVkVcxe2COuA2sYja0IUfwe0w&s",
-            confirmed=True,
-            role=db.query(Role).filter(Role.role=="Admin").first(),
-        )
-        db.add(admin)
-        db.commit()
-
-        moderator = User(
-            username="Moderator",
-            email="Moderator@gmail.com",
-            hashed_password=routes_auth.get_password_hash("qwerty"),
-            avatar="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfhs8u11hfQyBqgGQSp_lWzoHkcSIjm6KGDC0gg567yg&s",
-            confirmed=True,
-            role=db.query(Role).filter(Role.role=="Moderator").first(),
-        )
-        db.add(moderator)
-        db.commit()
-
-        user = User(
-            username="User",
-            email="User@gmail.com",
-            hashed_password=routes_auth.get_password_hash("qwerty"),
-            avatar="https://static6.depositphotos.com/1001599/647/i/450/depositphotos_6477379-stock-photo-fire-letters-a-z.jpg",
-            confirmed=True,
-            role=db.query(Role).filter(Role.role=="User").first(),
-        )
-        db.add(user)
-        db.commit()
-        return "OK"  
-    except Exception as _:
-        return "Exception"
-
-    
+    # create role
+    roles = ["Admin", "Moderator", "User"]
+    for role_name in roles:
+        existing_role = db.query(Role).filter(Role.role == role_name).first()
+        if not existing_role:
+            db.add(Role(role=role_name))
+    db.commit()
+    return "OK"
 
 
 if __name__ == "__main__":
