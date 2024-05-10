@@ -9,6 +9,9 @@ from src.repository import photo as repository_photo
 from src.conf.config import settings
 from src.auth.dependencies_auth import auth_service
 
+import qrcode
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 
 router = APIRouter(prefix="/transformation_photo", tags=["transformation_photo"])
 
@@ -35,7 +38,7 @@ async def cartoon_transformation_photo(
         db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
 
     Returns:
-        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+        StreamingResponse: Response containing transformed image, original image, and QR code.
     """
 
     photo = await repository_photo.get_photo(current_user.id, photo_id, db)
@@ -56,28 +59,33 @@ async def cartoon_transformation_photo(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(
-        url=photo.transformation_url_cartoon, user_id=current_user.id, photo_id=photo_id
+    # Створення QR-коду
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(photo.transformation_url_cartoon)
+    qr.make(fit=True)
+
+    # Генерація QR-коду у форматі PNG
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image_bytes = BytesIO()
+    qr_image.save(qr_image_bytes, "PNG")
+    qr_image_bytes.seek(0)
+
+    # Повернення відповіді з зображенням QR-коду та URL зображень
+    return StreamingResponse(
+        content=qr_image_bytes,
+        media_type="image/png",
+        headers={
+            'X-Transformed-Image-URL': transformed_image["secure_url"],
+            'X-Original-Image-URL': original_image["secure_url"]
+        }
     )
-    if filename != "":
-        if photo.qr_url_cartoon:
-            result = await repository_photo.delete_qr_code(
-                filename=photo.qr_url_cartoon, user_id=current_user.id, photo_id=photo_id
-            )
-            if result:
-                photo.qr_url_cartoon = filename
-                photo.updated_at = datetime.now()  # дата редагування
-                db.commit()
-
-    # Повернути URL трансформованого зображення та оригінального зображення
-    return {
-        "transformed_image_url": transformed_image["secure_url"],
-        "original_image_url": original_image["secure_url"],
-        "filename": photo.qr_url_cartoon
-    }
 
 
-# OK
+
+
+
+from fastapi.responses import StreamingResponse
+
 @router.post("/grayscale/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_grayscale(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -91,9 +99,9 @@ async def transformation_photo_grayscale(
         db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
 
     Returns:
-        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+        StreamingResponse: Response containing transformed image, original image, and QR code.
     """
-    user_id = current_user.id # Тимчасово, доки немає автентифікації
+    user_id = current_user.id
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -110,28 +118,28 @@ async def transformation_photo_grayscale(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(
-        url=photo.transformation_url_grayscale, user_id=user_id, photo_id=photo_id
+    # Створення QR-коду
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(photo.transformation_url_grayscale)
+    qr.make(fit=True)
+
+    # Генерація QR-коду у форматі PNG
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image_bytes = BytesIO()
+    qr_image.save(qr_image_bytes, "PNG")
+    qr_image_bytes.seek(0)
+
+    # Повернення відповіді з зображенням QR-коду та URL зображень
+    return StreamingResponse(
+        content=qr_image_bytes,
+        media_type="image/png",
+        headers={
+            'X-Transformed-Image-URL': transformed_image["secure_url"],
+            'X-Original-Image-URL': original_image["secure_url"]
+        }
     )
-    if filename != "":
-        if photo.qr_url_grayscale:
-            result = await repository_photo.delete_qr_code(
-                filename=photo.qr_url_grayscale, user_id=user_id, photo_id=photo_id
-            )
-            if result:
-                photo.qr_url_grayscale = filename
-                photo.updated_at = datetime.now()  # дата редагування
-                db.commit()
-
-    # Повернути URL трансформованого зображення та оригінального зображення
-    return {
-        "transformed_image_url": transformed_image["secure_url"],
-        "original_image_url": original_image["secure_url"],
-        "filename": photo.qr_url_grayscale,
-    }
 
 
-# OK
 @router.post("/face/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_face(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -145,9 +153,9 @@ async def transformation_photo_face(
         db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
 
     Returns:
-        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+        StreamingResponse: Response containing transformed image, original image, and QR code.
     """
-    user_id = current_user.id  # Тимчасово, доки немає автентифікації
+    user_id = current_user.id
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -169,28 +177,28 @@ async def transformation_photo_face(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(
-        url=photo.transformation_url_mask, user_id=user_id, photo_id=photo_id
+    # Створення QR-коду
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(photo.transformation_url_mask)
+    qr.make(fit=True)
+
+    # Генерація QR-коду у форматі PNG
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image_bytes = BytesIO()
+    qr_image.save(qr_image_bytes, "PNG")
+    qr_image_bytes.seek(0)
+
+    # Повернення відповіді з зображенням QR-коду та URL зображень
+    return StreamingResponse(
+        content=qr_image_bytes,
+        media_type="image/png",
+        headers={
+            'X-Transformed-Image-URL': transformed_image["secure_url"],
+            'X-Original-Image-URL': original_image["secure_url"]
+        }
     )
-    if filename != "":
-        if photo.qr_url_mask:
-            result = await repository_photo.delete_qr_code(
-                filename=photo.qr_url_mask, user_id=user_id, photo_id=photo_id
-            )
-            if result:
-                photo.qr_url_mask = filename
-                photo.updated_at = datetime.now()  # дата редагування
-                db.commit()
-
-    # Повернути URL трансформованого зображення та оригінального зображення
-    return {
-        "transformed_image_url": transformed_image["secure_url"],
-        "original_image_url": original_image["secure_url"],
-        "filename": photo.qr_url_mask,
-    }
 
 
-# OK
 @router.post("/tilt/{photo_id}", status_code=status.HTTP_200_OK)
 async def transformation_photo_tilt(
     request: Request, photo_id: int, db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)
@@ -204,9 +212,9 @@ async def transformation_photo_tilt(
         db (Session, optional): SQLAlchemy database session. Defaults to Depends(get_db).
 
     Returns:
-        dict: Dictionary containing transformed image URL, original image URL, and filename of QR code.
+        StreamingResponse: Response containing transformed image, original image, and QR code.
     """
-    user_id = current_user.id  # Тимчасово, доки немає автентифікації
+    user_id = current_user.id
     photo = await repository_photo.get_photo(user_id, photo_id, db)
 
     # Зберегти оригінальне зображення в Cloudinary
@@ -230,22 +238,23 @@ async def transformation_photo_tilt(
     db.add(photo)
     db.commit()
 
-    filename = await repository_photo.create_qr_code(
-        url=photo.transformation_url_tilt, user_id=user_id, photo_id=photo_id
-    )
-    if filename != "":
-        if photo.qr_url_tilt:
-            result = await repository_photo.delete_qr_code(
-                filename=photo.qr_url_tilt, user_id=user_id, photo_id=photo_id
-            )
-            if result:
-                photo.qr_url_tilt = filename
-                photo.updated_at = datetime.now()  # дата редагування
-                db.commit()
+    # Створення QR-коду
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(photo.transformation_url_tilt)
+    qr.make(fit=True)
 
-    # Повернути URL трансформованого зображення та оригінального зображення
-    return {
-        "transformed_image_url": transformed_image["secure_url"],
-        "original_image_url": original_image["secure_url"],
-        "filename": photo.qr_url_tilt,
-    }
+    # Генерація QR-коду у форматі PNG
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image_bytes = BytesIO()
+    qr_image.save(qr_image_bytes, "PNG")
+    qr_image_bytes.seek(0)
+
+    # Повернення відповіді з зображенням QR-коду та URL зображень
+    return StreamingResponse(
+        content=qr_image_bytes,
+        media_type="image/png",
+        headers={
+            'X-Transformed-Image-URL': transformed_image["secure_url"],
+            'X-Original-Image-URL': original_image["secure_url"]
+        }
+    )
