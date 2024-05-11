@@ -1,6 +1,6 @@
 # Photo Share
 
-(logo.jpeg)
+![обкладинка](logo.jpeg)
 
 **This project is an API for a photo gallery with the ability to add comments. Users can upload their photos, view photos from other users, and leave comments on them.**
 
