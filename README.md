@@ -33,6 +33,7 @@
 
 6. Run the server:
     ```
+    cd ..
     python main.py
     ```
 
