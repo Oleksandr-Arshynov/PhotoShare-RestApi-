@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from fastapi_mail.errors import ConnectionErrors
 import jose.jwt
 import fastapi
 import fastapi.security
@@ -144,3 +147,36 @@ class Auth:
 
 auth_service = Auth()
 
+conf = ConnectionConfig(
+    MAIL_USERNAME="fastapi_project@meta.ua",
+    MAIL_PASSWORD="Pythoncourse2024",
+    MAIL_FROM=str("fastapi_project@meta.ua"),
+    MAIL_PORT=465,
+    MAIL_SERVER="smtp.meta.ua",
+    MAIL_FROM_NAME="ContactManager",
+    MAIL_STARTTLS=False,
+    MAIL_SSL_TLS=True,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+    TEMPLATE_FOLDER=Path(__file__).parent / "templates",
+)
+
+
+async def send_email(email: str, username: str, host: str):
+    try:
+        token_verification = auth_service.create_email_token(data={"sub": email})
+        message = MessageSchema(
+            subject="Confirm your email ",
+            recipients=[email],
+            template_body={
+                "host": host,
+                "username": username,
+                "token": token_verification,
+            },
+            subtype=MessageType.html,
+        )
+
+        fm = FastMail(conf)
+        await fm.send_message(message, template_name="verify_email.html")
+    except ConnectionErrors as err:
+        print(err)
