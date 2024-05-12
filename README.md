@@ -31,12 +31,7 @@
     alembic upgrade head
     ```
 
-6. Perform migration:
-    ```
-    alembic revision --autogenerate -m 'Init'
-    ```
-
-7. Run the server:
+6. Run the server:
     ```
     python main.py
     ```
